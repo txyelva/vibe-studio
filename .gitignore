@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+.pnpm-store/
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific - 用户数据和敏感信息
+vibe_studio/data/
+*.db
+*.sqlite
+
+# 环境变量和密钥（绝不上传）
+.env
+.env.local
+.env.*.local
+
+# 构建输出（由 CI/CD 生成）
+vibe_studio/dist/
+react/dist/
+
+# 设计文件（可选，较大）
+*.pxhm
+设计文件.pxhm
+react-设计文件.zip
+
+# 临时文件
+*.tmp
+*.bak
+*.backup
+markdown_example.md

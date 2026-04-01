@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vibe-studio"
+version = "0.1.0"
+description = "AI Coding Studio - Visual interface for vibe coding with any LLM"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "websockets>=12.0",
+    "anthropic>=0.40.0",
+    "openai>=1.50.0",
+    "httpx>=0.27.0",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.0.0",
+    "aiofiles>=23.0.0",
+    "rich>=13.0.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+]
+
+[project.scripts]
+vibe-studio = "vibe_studio.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+include = [
+    "vibe_studio/**",
+]

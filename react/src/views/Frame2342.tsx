@@ -1,0 +1,1144 @@
+import "@/styles/Frame2342.css";
+const Frame2342 = () => {
+    return (
+        <div className="scroll-container">
+            <div id="2_342" className="Pixso-frame-2_342">
+                <div id="2_343" className="stroke-wrapper-2_343">
+                    <div className="Pixso-frame-2_343">
+                        <div className="frame-content-2_343">
+                            <div id="2_344" className="stroke-wrapper-2_344">
+                                <div className="Pixso-frame-2_344">
+                                    <div className="frame-content-2_344">
+                                        <div
+                                            id="2_345"
+                                            className="Pixso-vector-2_345"
+                                        ></div>
+                                        <div
+                                            id="2_348"
+                                            className="Pixso-text-2_348"
+                                        >
+                                            {"&nbsp;"}
+                                        </div>
+                                        <div
+                                            id="2_349"
+                                            className="Pixso-text-2_349"
+                                        >
+                                            {"&nbsp;"}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="stroke-2_344"></div>
+                            </div>
+                            <div id="2_350" className="Pixso-frame-2_350">
+                                <div className="frame-content-2_350">
+                                    <div
+                                        id="2_351"
+                                        className="Pixso-frame-2_351"
+                                    >
+                                        <div className="frame-content-2_351">
+                                            <div
+                                                id="2_352"
+                                                className="Pixso-vector-2_352"
+                                            ></div>
+                                            <div
+                                                id="2_354"
+                                                className="Pixso-text-2_354"
+                                            >
+                                                {"&nbsp;"}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        id="2_355"
+                                        className="stroke-wrapper-2_355"
+                                    >
+                                        <div className="Pixso-frame-2_355">
+                                            <div className="frame-content-2_355">
+                                                <div
+                                                    id="2_356"
+                                                    className="Pixso-frame-2_356"
+                                                >
+                                                    <div
+                                                        id="2_357"
+                                                        className="Pixso-vector-2_357"
+                                                    ></div>
+                                                    <div
+                                                        id="2_358"
+                                                        className="Pixso-vector-2_358"
+                                                    ></div>
+                                                    <div
+                                                        id="2_359"
+                                                        className="Pixso-vector-2_359"
+                                                    ></div>
+                                                    <div
+                                                        id="2_360"
+                                                        className="Pixso-vector-2_360"
+                                                    ></div>
+                                                    <div
+                                                        id="2_361"
+                                                        className="Pixso-vector-2_361"
+                                                    ></div>
+                                                    <div
+                                                        id="2_362"
+                                                        className="Pixso-vector-2_362"
+                                                    ></div>
+                                                    <div
+                                                        id="2_363"
+                                                        className="Pixso-vector-2_363"
+                                                    ></div>
+                                                    <div
+                                                        id="2_364"
+                                                        className="Pixso-vector-2_364"
+                                                    ></div>
+                                                    <div
+                                                        id="2_365"
+                                                        className="Pixso-vector-2_365"
+                                                    ></div>
+                                                    <div
+                                                        id="2_366"
+                                                        className="Pixso-vector-2_366"
+                                                    ></div>
+                                                    <div
+                                                        id="2_367"
+                                                        className="Pixso-vector-2_367"
+                                                    ></div>
+                                                    <div
+                                                        id="2_368"
+                                                        className="Pixso-vector-2_368"
+                                                    ></div>
+                                                    <div
+                                                        id="2_369"
+                                                        className="stroke-wrapper-2_369"
+                                                    >
+                                                        <div className="Pixso-rectangle-2_369"></div>
+                                                        <div className="stroke-2_369"></div>
+                                                    </div>
+                                                    <div
+                                                        id="2_370"
+                                                        className="stroke-wrapper-2_370"
+                                                    >
+                                                        <div className="Pixso-rectangle-2_370"></div>
+                                                        <div className="stroke-2_370"></div>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    id="2_371"
+                                                    className="Pixso-text-2_371"
+                                                >
+                                                    {"&nbsp;"}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="stroke-2_355"></div>
+                                    </div>
+                                    <div
+                                        id="2_372"
+                                        className="Pixso-frame-2_372"
+                                    >
+                                        <div className="frame-content-2_372">
+                                            <div
+                                                id="2_373"
+                                                className="Pixso-vector-2_373"
+                                            ></div>
+                                            <div
+                                                id="2_376"
+                                                className="Pixso-text-2_376"
+                                            >
+                                                {"&nbsp;"}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="2_377" className="Pixso-frame-2_377"></div>
+                        </div>
+                    </div>
+                    <div className="stroke-2_343"></div>
+                </div>
+                <div id="2_378" className="Pixso-frame-2_378">
+                    <div className="frame-content-2_378">
+                        <div id="2_379" className="stroke-wrapper-2_379">
+                            <div className="Pixso-frame-2_379">
+                                <div className="frame-content-2_379">
+                                    <div
+                                        id="2_380"
+                                        className="Pixso-frame-2_380"
+                                    >
+                                        <div
+                                            id="2_381"
+                                            className="Pixso-text-2_381"
+                                        >
+                                            {"&nbsp;"}
+                                        </div>
+                                        <div
+                                            id="2_382"
+                                            className="Pixso-text-2_382"
+                                        >
+                                            {"&nbsp;"}
+                                        </div>
+                                    </div>
+                                    <div
+                                        id="2_383"
+                                        className="Pixso-frame-2_383"
+                                    ></div>
+                                    <div
+                                        id="2_384"
+                                        className="Pixso-frame-2_384"
+                                    >
+                                        <div className="frame-content-2_384">
+                                            <div
+                                                id="2_385"
+                                                className="Pixso-vector-2_385"
+                                            ></div>
+                                            <div
+                                                id="2_389"
+                                                className="Pixso-text-2_389"
+                                            >
+                                                {"&nbsp;"}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="stroke-2_379"></div>
+                        </div>
+                        <div id="2_390" className="Pixso-frame-2_390">
+                            <div className="frame-content-2_390">
+                                <div
+                                    id="2_391"
+                                    className="stroke-wrapper-2_391"
+                                >
+                                    <div className="Pixso-frame-2_391">
+                                        <div className="frame-content-2_391">
+                                            <div
+                                                id="2_392"
+                                                className="Pixso-text-2_392"
+                                            >
+                                                {"&nbsp;"}
+                                            </div>
+                                            <div
+                                                id="2_393"
+                                                className="stroke-wrapper-2_393"
+                                            >
+                                                <div className="Pixso-frame-2_393">
+                                                    <div className="frame-content-2_393">
+                                                        <div
+                                                            id="2_394"
+                                                            className="Pixso-frame-2_394"
+                                                        >
+                                                            <div className="frame-content-2_394">
+                                                                <div
+                                                                    id="2_395"
+                                                                    className="Pixso-frame-2_395"
+                                                                >
+                                                                    <div
+                                                                        id="2_396"
+                                                                        className="Pixso-vector-2_396"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_397"
+                                                                        className="Pixso-vector-2_397"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_398"
+                                                                        className="Pixso-vector-2_398"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_399"
+                                                                        className="Pixso-vector-2_399"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_400"
+                                                                        className="Pixso-vector-2_400"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_401"
+                                                                        className="Pixso-vector-2_401"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_402"
+                                                                        className="Pixso-vector-2_402"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_403"
+                                                                        className="Pixso-vector-2_403"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_404"
+                                                                        className="Pixso-vector-2_404"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_405"
+                                                                        className="Pixso-vector-2_405"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_406"
+                                                                        className="Pixso-vector-2_406"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_407"
+                                                                        className="Pixso-vector-2_407"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_408"
+                                                                        className="stroke-wrapper-2_408"
+                                                                    >
+                                                                        <div className="Pixso-rectangle-2_408"></div>
+                                                                        <div className="stroke-2_408"></div>
+                                                                    </div>
+                                                                    <div
+                                                                        id="2_409"
+                                                                        className="stroke-wrapper-2_409"
+                                                                    >
+                                                                        <div className="Pixso-rectangle-2_409"></div>
+                                                                        <div className="stroke-2_409"></div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    id="2_410"
+                                                                    className="Pixso-frame-2_410"
+                                                                >
+                                                                    <div className="frame-content-2_410">
+                                                                        <div
+                                                                            id="2_411"
+                                                                            className="Pixso-text-2_411"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                        <div
+                                                                            id="2_412"
+                                                                            className="Pixso-text-2_412"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    id="2_413"
+                                                                    className="Pixso-frame-2_413"
+                                                                >
+                                                                    <div
+                                                                        id="2_414"
+                                                                        className="Pixso-text-2_414"
+                                                                    >
+                                                                        {
+                                                                            "&nbsp;"
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            id="2_415"
+                                                            className="Pixso-text-2_415"
+                                                        >
+                                                            {"&nbsp;"}
+                                                        </div>
+                                                        <div
+                                                            id="2_416"
+                                                            className="Pixso-frame-2_416"
+                                                        >
+                                                            <div className="frame-content-2_416">
+                                                                <div
+                                                                    id="2_417"
+                                                                    className="Pixso-frame-2_417"
+                                                                >
+                                                                    <div className="frame-content-2_417">
+                                                                        <div
+                                                                            id="2_418"
+                                                                            className="Pixso-text-2_418"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                        <div
+                                                                            id="2_419"
+                                                                            className="Pixso-text-2_419"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    id="2_420"
+                                                                    className="Pixso-frame-2_420"
+                                                                >
+                                                                    <div className="frame-content-2_420">
+                                                                        <div
+                                                                            id="2_421"
+                                                                            className="Pixso-text-2_421"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                        <div
+                                                                            id="2_422"
+                                                                            className="Pixso-text-2_422"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    id="2_423"
+                                                                    className="Pixso-frame-2_423"
+                                                                >
+                                                                    <div className="frame-content-2_423">
+                                                                        <div
+                                                                            id="2_424"
+                                                                            className="Pixso-text-2_424"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                        <div
+                                                                            id="2_425"
+                                                                            className="Pixso-text-2_425"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="stroke-2_393"></div>
+                                            </div>
+                                            <div
+                                                id="2_426"
+                                                className="stroke-wrapper-2_426"
+                                            >
+                                                <div className="Pixso-frame-2_426">
+                                                    <div className="frame-content-2_426">
+                                                        <div
+                                                            id="2_427"
+                                                            className="Pixso-frame-2_427"
+                                                        >
+                                                            <div className="frame-content-2_427">
+                                                                <div
+                                                                    id="2_428"
+                                                                    className="Pixso-frame-2_428"
+                                                                >
+                                                                    <div
+                                                                        id="2_429"
+                                                                        className="Pixso-vector-2_429"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_430"
+                                                                        className="Pixso-vector-2_430"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_431"
+                                                                        className="Pixso-vector-2_431"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_432"
+                                                                        className="Pixso-vector-2_432"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_433"
+                                                                        className="Pixso-vector-2_433"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_434"
+                                                                        className="Pixso-vector-2_434"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_435"
+                                                                        className="Pixso-vector-2_435"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_436"
+                                                                        className="Pixso-vector-2_436"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_437"
+                                                                        className="Pixso-vector-2_437"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_438"
+                                                                        className="Pixso-vector-2_438"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_439"
+                                                                        className="Pixso-vector-2_439"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_440"
+                                                                        className="Pixso-vector-2_440"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_441"
+                                                                        className="stroke-wrapper-2_441"
+                                                                    >
+                                                                        <div className="Pixso-rectangle-2_441"></div>
+                                                                        <div className="stroke-2_441"></div>
+                                                                    </div>
+                                                                    <div
+                                                                        id="2_442"
+                                                                        className="stroke-wrapper-2_442"
+                                                                    >
+                                                                        <div className="Pixso-rectangle-2_442"></div>
+                                                                        <div className="stroke-2_442"></div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    id="2_443"
+                                                                    className="Pixso-frame-2_443"
+                                                                >
+                                                                    <div className="frame-content-2_443">
+                                                                        <div
+                                                                            id="2_444"
+                                                                            className="Pixso-text-2_444"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                        <div
+                                                                            id="2_445"
+                                                                            className="Pixso-text-2_445"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            id="2_446"
+                                                            className="Pixso-text-2_446"
+                                                        >
+                                                            {"&nbsp;"}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="stroke-2_426"></div>
+                                            </div>
+                                            <div
+                                                id="2_447"
+                                                className="stroke-wrapper-2_447"
+                                            >
+                                                <div className="Pixso-frame-2_447">
+                                                    <div className="frame-content-2_447">
+                                                        <div
+                                                            id="2_448"
+                                                            className="Pixso-frame-2_448"
+                                                        >
+                                                            <div className="frame-content-2_448">
+                                                                <div
+                                                                    id="2_449"
+                                                                    className="Pixso-frame-2_449"
+                                                                >
+                                                                    <div
+                                                                        id="2_450"
+                                                                        className="Pixso-vector-2_450"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_451"
+                                                                        className="Pixso-vector-2_451"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_452"
+                                                                        className="Pixso-vector-2_452"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_453"
+                                                                        className="Pixso-vector-2_453"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_454"
+                                                                        className="Pixso-vector-2_454"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_455"
+                                                                        className="Pixso-vector-2_455"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_456"
+                                                                        className="Pixso-vector-2_456"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_457"
+                                                                        className="Pixso-vector-2_457"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_458"
+                                                                        className="Pixso-vector-2_458"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_459"
+                                                                        className="Pixso-vector-2_459"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_460"
+                                                                        className="Pixso-vector-2_460"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_461"
+                                                                        className="Pixso-vector-2_461"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_462"
+                                                                        className="stroke-wrapper-2_462"
+                                                                    >
+                                                                        <div className="Pixso-rectangle-2_462"></div>
+                                                                        <div className="stroke-2_462"></div>
+                                                                    </div>
+                                                                    <div
+                                                                        id="2_463"
+                                                                        className="stroke-wrapper-2_463"
+                                                                    >
+                                                                        <div className="Pixso-rectangle-2_463"></div>
+                                                                        <div className="stroke-2_463"></div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    id="2_464"
+                                                                    className="Pixso-frame-2_464"
+                                                                >
+                                                                    <div className="frame-content-2_464">
+                                                                        <div
+                                                                            id="2_465"
+                                                                            className="Pixso-text-2_465"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                        <div
+                                                                            id="2_466"
+                                                                            className="Pixso-text-2_466"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            id="2_467"
+                                                            className="Pixso-text-2_467"
+                                                        >
+                                                            {"&nbsp;"}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="stroke-2_447"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="stroke-2_391"></div>
+                                </div>
+                                <div id="2_468" className="Pixso-frame-2_468">
+                                    <div className="frame-content-2_468">
+                                        <div
+                                            id="2_469"
+                                            className="Pixso-frame-2_469"
+                                        >
+                                            <div className="frame-content-2_469">
+                                                <div
+                                                    id="2_470"
+                                                    className="Pixso-text-2_470"
+                                                >
+                                                    {"&nbsp;"}
+                                                </div>
+                                                <div
+                                                    id="2_471"
+                                                    className="Pixso-frame-2_471"
+                                                >
+                                                    <div className="frame-content-2_471">
+                                                        <div
+                                                            id="2_472"
+                                                            className="Pixso-text-2_472"
+                                                        >
+                                                            {"&nbsp;"}
+                                                        </div>
+                                                        <div
+                                                            id="2_473"
+                                                            className="stroke-wrapper-2_473"
+                                                        >
+                                                            <div className="Pixso-frame-2_473">
+                                                                <div className="frame-content-2_473">
+                                                                    <div
+                                                                        id="2_474"
+                                                                        className="Pixso-vector-2_474"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_478"
+                                                                        className="Pixso-text-2_478"
+                                                                    >
+                                                                        {
+                                                                            "&nbsp;"
+                                                                        }
+                                                                    </div>
+                                                                    <div
+                                                                        id="2_479"
+                                                                        className="Pixso-frame-2_479"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_480"
+                                                                        className="Pixso-frame-2_480"
+                                                                    >
+                                                                        <div
+                                                                            id="2_481"
+                                                                            className="Pixso-text-2_481"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="stroke-2_473"></div>
+                                                        </div>
+                                                        <div
+                                                            id="2_482"
+                                                            className="Pixso-text-2_482"
+                                                        >
+                                                            {"&nbsp;"}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    id="2_483"
+                                                    className="Pixso-frame-2_483"
+                                                >
+                                                    <div className="frame-content-2_483">
+                                                        <div
+                                                            id="2_484"
+                                                            className="Pixso-frame-2_484"
+                                                        >
+                                                            <div className="frame-content-2_484">
+                                                                <div
+                                                                    id="2_485"
+                                                                    className="Pixso-text-2_485"
+                                                                >
+                                                                    {"&nbsp;"}
+                                                                </div>
+                                                                <div
+                                                                    id="2_486"
+                                                                    className="Pixso-text-2_486"
+                                                                >
+                                                                    {"&nbsp;"}
+                                                                </div>
+                                                                <div
+                                                                    id="2_487"
+                                                                    className="Pixso-frame-2_487"
+                                                                ></div>
+                                                                <div
+                                                                    id="2_488"
+                                                                    className="Pixso-text-2_488"
+                                                                >
+                                                                    {"&nbsp;"}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            id="2_489"
+                                                            className="Pixso-frame-2_489"
+                                                        >
+                                                            <div
+                                                                id="2_490"
+                                                                className="Pixso-frame-2_490"
+                                                            ></div>
+                                                            <div
+                                                                id="2_491"
+                                                                className="Pixso-frame-2_491"
+                                                            ></div>
+                                                        </div>
+                                                        <div
+                                                            id="2_492"
+                                                            className="Pixso-frame-2_492"
+                                                        >
+                                                            <div className="frame-content-2_492">
+                                                                <div
+                                                                    id="2_493"
+                                                                    className="Pixso-text-2_493"
+                                                                >
+                                                                    {"&nbsp;"}
+                                                                </div>
+                                                                <div
+                                                                    id="2_494"
+                                                                    className="Pixso-frame-2_494"
+                                                                ></div>
+                                                                <div
+                                                                    id="2_495"
+                                                                    className="Pixso-text-2_495"
+                                                                >
+                                                                    {"&nbsp;"}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    id="2_496"
+                                                    className="Pixso-frame-2_496"
+                                                >
+                                                    <div className="frame-content-2_496">
+                                                        <div
+                                                            id="2_497"
+                                                            className="Pixso-frame-2_497"
+                                                        >
+                                                            <div className="frame-content-2_497">
+                                                                <div
+                                                                    id="2_498"
+                                                                    className="Pixso-text-2_498"
+                                                                >
+                                                                    {"&nbsp;"}
+                                                                </div>
+                                                                <div
+                                                                    id="2_499"
+                                                                    className="Pixso-text-2_499"
+                                                                >
+                                                                    {"&nbsp;"}
+                                                                </div>
+                                                                <div
+                                                                    id="2_500"
+                                                                    className="Pixso-frame-2_500"
+                                                                ></div>
+                                                                <div
+                                                                    id="2_501"
+                                                                    className="Pixso-text-2_501"
+                                                                >
+                                                                    {"&nbsp;"}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            id="2_502"
+                                                            className="Pixso-frame-2_502"
+                                                        >
+                                                            <div
+                                                                id="2_503"
+                                                                className="Pixso-frame-2_503"
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    id="2_504"
+                                                    className="stroke-wrapper-2_504"
+                                                >
+                                                    <div className="Pixso-frame-2_504">
+                                                        <div className="frame-content-2_504">
+                                                            <div
+                                                                id="2_505"
+                                                                className="Pixso-frame-2_505"
+                                                            >
+                                                                <div className="frame-content-2_505">
+                                                                    <div
+                                                                        id="2_506"
+                                                                        className="Pixso-frame-2_506"
+                                                                    >
+                                                                        <div className="frame-content-2_506">
+                                                                            <div
+                                                                                id="2_507"
+                                                                                className="Pixso-text-2_507"
+                                                                            >
+                                                                                {
+                                                                                    "&nbsp;"
+                                                                                }
+                                                                            </div>
+                                                                            <div
+                                                                                id="2_508"
+                                                                                className="Pixso-text-2_508"
+                                                                            >
+                                                                                {
+                                                                                    "&nbsp;"
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div
+                                                                        id="2_509"
+                                                                        className="Pixso-frame-2_509"
+                                                                    >
+                                                                        <div
+                                                                            id="2_510"
+                                                                            className="Pixso-frame-2_510"
+                                                                        ></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="stroke-2_504"></div>
+                                                </div>
+                                                <div
+                                                    id="2_511"
+                                                    className="Pixso-frame-2_511"
+                                                >
+                                                    <div className="frame-content-2_511">
+                                                        <div
+                                                            id="2_512"
+                                                            className="Pixso-frame-2_512"
+                                                        >
+                                                            <div className="frame-content-2_512">
+                                                                <div
+                                                                    id="2_513"
+                                                                    className="Pixso-text-2_513"
+                                                                >
+                                                                    {"&nbsp;"}
+                                                                </div>
+                                                                <div
+                                                                    id="2_514"
+                                                                    className="Pixso-text-2_514"
+                                                                >
+                                                                    {"&nbsp;"}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            id="2_515"
+                                                            className="Pixso-frame-2_515"
+                                                        >
+                                                            <div className="frame-content-2_515">
+                                                                <div
+                                                                    id="2_516"
+                                                                    className="stroke-wrapper-2_516"
+                                                                >
+                                                                    <div className="Pixso-frame-2_516">
+                                                                        <div className="frame-content-2_516">
+                                                                            <div
+                                                                                id="2_517"
+                                                                                className="Pixso-text-2_517"
+                                                                            >
+                                                                                {
+                                                                                    "&nbsp;"
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="stroke-2_516"></div>
+                                                                </div>
+                                                                <div
+                                                                    id="2_518"
+                                                                    className="stroke-wrapper-2_518"
+                                                                >
+                                                                    <div className="Pixso-frame-2_518">
+                                                                        <div className="frame-content-2_518">
+                                                                            <div
+                                                                                id="2_519"
+                                                                                className="Pixso-text-2_519"
+                                                                            >
+                                                                                {
+                                                                                    "&nbsp;"
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="stroke-2_518"></div>
+                                                                </div>
+                                                                <div
+                                                                    id="2_520"
+                                                                    className="Pixso-frame-2_520"
+                                                                >
+                                                                    <div className="frame-content-2_520">
+                                                                        <div
+                                                                            id="2_521"
+                                                                            className="Pixso-text-2_521"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    id="2_522"
+                                                                    className="stroke-wrapper-2_522"
+                                                                >
+                                                                    <div className="Pixso-frame-2_522">
+                                                                        <div className="frame-content-2_522">
+                                                                            <div
+                                                                                id="2_523"
+                                                                                className="Pixso-text-2_523"
+                                                                            >
+                                                                                {
+                                                                                    "&nbsp;"
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="stroke-2_522"></div>
+                                                                </div>
+                                                                <div
+                                                                    id="2_524"
+                                                                    className="stroke-wrapper-2_524"
+                                                                >
+                                                                    <div className="Pixso-frame-2_524">
+                                                                        <div className="frame-content-2_524">
+                                                                            <div
+                                                                                id="2_525"
+                                                                                className="Pixso-text-2_525"
+                                                                            >
+                                                                                {
+                                                                                    "&nbsp;"
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="stroke-2_524"></div>
+                                                                </div>
+                                                                <div
+                                                                    id="2_526"
+                                                                    className="stroke-wrapper-2_526"
+                                                                >
+                                                                    <div className="Pixso-frame-2_526">
+                                                                        <div className="frame-content-2_526">
+                                                                            <div
+                                                                                id="2_527"
+                                                                                className="Pixso-text-2_527"
+                                                                            >
+                                                                                {
+                                                                                    "&nbsp;"
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="stroke-2_526"></div>
+                                                                </div>
+                                                                <div
+                                                                    id="2_528"
+                                                                    className="stroke-wrapper-2_528"
+                                                                >
+                                                                    <div className="Pixso-frame-2_528">
+                                                                        <div className="frame-content-2_528">
+                                                                            <div
+                                                                                id="2_529"
+                                                                                className="Pixso-text-2_529"
+                                                                            >
+                                                                                {
+                                                                                    "&nbsp;"
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="stroke-2_528"></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            id="2_530"
+                                                            className="Pixso-text-2_530"
+                                                        >
+                                                            {"&nbsp;"}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    id="2_531"
+                                                    className="stroke-wrapper-2_531"
+                                                >
+                                                    <div className="Pixso-frame-2_531">
+                                                        <div className="frame-content-2_531">
+                                                            <div
+                                                                id="2_532"
+                                                                className="Pixso-frame-2_532"
+                                                            >
+                                                                <div className="frame-content-2_532">
+                                                                    <div
+                                                                        id="2_533"
+                                                                        className="Pixso-vector-2_533"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_534"
+                                                                        className="Pixso-text-2_534"
+                                                                    >
+                                                                        {
+                                                                            "&nbsp;"
+                                                                        }
+                                                                    </div>
+                                                                    <div
+                                                                        id="2_535"
+                                                                        className="Pixso-frame-2_535"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_536"
+                                                                        className="Pixso-text-2_536"
+                                                                    >
+                                                                        {
+                                                                            "&nbsp;"
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div
+                                                                id="2_537"
+                                                                className="Pixso-frame-2_537"
+                                                            >
+                                                                <div
+                                                                    id="2_538"
+                                                                    className="Pixso-frame-2_538"
+                                                                ></div>
+                                                            </div>
+                                                            <div
+                                                                id="2_539"
+                                                                className="Pixso-frame-2_539"
+                                                            >
+                                                                <div className="frame-content-2_539">
+                                                                    <div
+                                                                        id="2_540"
+                                                                        className="Pixso-text-2_540"
+                                                                    >
+                                                                        {
+                                                                            "&nbsp;"
+                                                                        }
+                                                                    </div>
+                                                                    <div
+                                                                        id="2_541"
+                                                                        className="Pixso-frame-2_541"
+                                                                    ></div>
+                                                                    <div
+                                                                        id="2_542"
+                                                                        className="Pixso-frame-2_542"
+                                                                    >
+                                                                        <div
+                                                                            id="2_543"
+                                                                            className="Pixso-text-2_543"
+                                                                        >
+                                                                            {
+                                                                                "&nbsp;"
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="stroke-2_531"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+export default Frame2342;
