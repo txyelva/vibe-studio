@@ -9,13 +9,11 @@ from fastapi.staticfiles import StaticFiles
 
 from .api.router import api_router
 from .api.ws import ws_router
-from .database import init_database
 
 DIST_DIR = Path(__file__).parent / "dist"
 
 
 def create_app() -> FastAPI:
-    init_database()
     app = FastAPI(title="Vibe Studio", version="0.1.0")
 
     app.add_middleware(
