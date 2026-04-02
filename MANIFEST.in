@@ -1,0 +1,9 @@
+# 包含预构建的前端文件
+recursive-include vibe_studio/dist *
+
+# 排除敏感和开发文件
+global-exclude *.pyc
+global-exclude __pycache__/*
+global-exclude .DS_Store
+global-exclude *.bak
+recursive-exclude vibe_studio/data *

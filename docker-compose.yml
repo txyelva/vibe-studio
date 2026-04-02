@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  vibe-studio:
+    build: .
+    ports:
+      - "7788:7788"
+    volumes:
+      - ~/.vibe-studio:/root/.vibe-studio
+      - ~/projects:/projects  # 挂载项目目录
+    environment:
+      - VIBE_CONFIG_DIR=/root/.vibe-studio
+    restart: unless-stopped
