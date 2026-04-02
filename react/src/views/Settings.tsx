@@ -10,16 +10,34 @@ const API_TYPES = [
 export default function Settings() {
   const { config, refreshConfig } = useStore();
   const [, setBuiltins] = useState<Record<string, any>>({});
-  const [activeTab, setActiveTab] = useState<"providers" | "appearance" | "account">("providers");
+  const [activeTab, setActiveTab] = useState<"providers" | "security" | "appearance" | "account">("providers");
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState({ provider_id: "", name: "", base_url: "", api_type: "openai", api_key: "" });
   const [addingProvider, setAddingProvider] = useState(false);
   const [testResult, setTestResult] = useState<{ [k: string]: { ok: boolean; msg: string } }>({});
+  const [savingPermissions, setSavingPermissions] = useState(false);
+  const [permissionForm, setPermissionForm] = useState<{
+    defaultMode: "allow" | "deny" | "prompt";
+    toolModes: Record<string, "allow" | "deny" | "prompt">;
+  }>({
+    defaultMode: "allow",
+    toolModes: {},
+  });
+
+  const permissionTools = ["bash_exec", "write_file", "str_replace", "read_file", "list_files", "search_files"] as const;
 
   useEffect(() => {
     void api.getBuiltinProviders().then((r) => setBuiltins(r.providers));
   }, []);
+
+  useEffect(() => {
+    if (!config?.tool_permissions) return;
+    setPermissionForm({
+      defaultMode: config.tool_permissions.default_mode,
+      toolModes: config.tool_permissions.tool_modes,
+    });
+  }, [config?.tool_permissions]);
 
   async function handleTest(providerId: string) {
     setTestResult((r) => ({ ...r, [providerId]: { ok: false, msg: "测试中..." } }));
@@ -40,6 +58,16 @@ export default function Settings() {
   async function handleDelete(pid: string) {
     await api.deleteProvider(pid);
     await refreshConfig();
+  }
+
+  async function handleSavePermissions() {
+    setSavingPermissions(true);
+    try {
+      await api.setToolPermissions(permissionForm.defaultMode, permissionForm.toolModes);
+      await refreshConfig();
+    } finally {
+      setSavingPermissions(false);
+    }
   }
 
   return (
@@ -86,6 +114,7 @@ export default function Settings() {
         >
           {[
             { key: "providers", label: "Providers" },
+            { key: "security", label: "Security" },
             { key: "appearance", label: "Appearance" },
             { key: "account", label: "Account" },
           ].map((tab) => (
@@ -257,6 +286,80 @@ export default function Settings() {
               <div style={{ padding: 20, backgroundColor: "#141414", border: "1px solid #2f2f2f" }}>
                 <div style={{ fontSize: 12, fontWeight: "bold", color: "#fff", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>Appearance</div>
                 <p style={{ fontSize: 13, color: "#6a6a6a", margin: 0 }}>主题、皮肤等设置即将上线...</p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "security" && (
+            <div style={{ maxWidth: 720, display: "flex", flexDirection: "column", gap: 24 }}>
+              <div style={{ padding: 20, backgroundColor: "#141414", border: "1px solid #2f2f2f" }}>
+                <div style={{ fontSize: 12, fontWeight: "bold", color: "#fff", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>Tool Permissions</div>
+                <p style={{ fontSize: 13, color: "#8a8a8a", marginTop: 0, marginBottom: 16 }}>
+                  这里决定 AI 使用工具时是直接执行、始终拒绝，还是先等你审批。推荐把高风险工具切到 `prompt`。
+                </p>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
+                  <label style={{ fontSize: 11, color: "#6a6a6a" }}>默认模式</label>
+                  <select
+                    value={permissionForm.defaultMode}
+                    onChange={(e) => setPermissionForm((current) => ({ ...current, defaultMode: e.target.value as "allow" | "deny" | "prompt" }))}
+                    style={{ padding: "10px 12px", backgroundColor: "#0c0c0c", border: "1px solid #2f2f2f", color: "#fff", fontFamily: "inherit", fontSize: 12 }}
+                  >
+                    <option value="allow">allow</option>
+                    <option value="prompt">prompt</option>
+                    <option value="deny">deny</option>
+                  </select>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {permissionTools.map((toolName) => (
+                    <div key={toolName} style={{ display: "grid", gridTemplateColumns: "1fr 140px", gap: 12, alignItems: "center", padding: "12px 14px", backgroundColor: "#0c0c0c", border: "1px solid #2f2f2f" }}>
+                      <div>
+                        <div style={{ fontSize: 13, color: "#fff", fontWeight: 600 }}>{toolName}</div>
+                        <div style={{ fontSize: 11, color: "#6a6a6a", marginTop: 4 }}>
+                          {toolName === "bash_exec" ? "执行 shell 命令，建议 prompt" : toolName === "write_file" || toolName === "str_replace" ? "修改代码文件，建议 prompt" : "低风险读取类工具"}
+                        </div>
+                      </div>
+                      <select
+                        value={permissionForm.toolModes[toolName] || permissionForm.defaultMode}
+                        onChange={(e) =>
+                          setPermissionForm((current) => ({
+                            ...current,
+                            toolModes: {
+                              ...current.toolModes,
+                              [toolName]: e.target.value as "allow" | "deny" | "prompt",
+                            },
+                          }))
+                        }
+                        style={{ padding: "8px 10px", backgroundColor: "#141414", border: "1px solid #2f2f2f", color: "#fff", fontFamily: "inherit", fontSize: 12 }}
+                      >
+                        <option value="allow">allow</option>
+                        <option value="prompt">prompt</option>
+                        <option value="deny">deny</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+                  <button
+                    onClick={() => void handleSavePermissions()}
+                    disabled={savingPermissions}
+                    style={{
+                      padding: "10px 16px",
+                      backgroundColor: "#00ff88",
+                      border: "none",
+                      color: "#0c0c0c",
+                      fontWeight: "bold",
+                      fontSize: 12,
+                      cursor: "pointer",
+                      opacity: savingPermissions ? 0.6 : 1,
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {savingPermissions ? "保存中..." : "保存权限策略"}
+                  </button>
+                </div>
               </div>
             </div>
           )}

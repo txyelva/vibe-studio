@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
 from ..config import BUILTIN_PROVIDERS, ProviderConfig, load_config, save_config
+from ..auth import require_auth
 from ..conversation import (
     create_conversation,
     delete_conversation,
@@ -23,10 +24,11 @@ from .auth import router as auth_router
 from .models import router as models_router
 
 api_router = APIRouter()
+protected_router = APIRouter(dependencies=[Depends(require_auth)])
 
 # 包含认证路由
 api_router.include_router(auth_router)
-api_router.include_router(models_router)
+api_router.include_router(models_router, dependencies=[Depends(require_auth)])
 
 
 # ──────────────────────────────────────────────
@@ -49,7 +51,7 @@ class ProviderRequest(BaseModel):
     models: list[dict] = []
 
 
-@api_router.get("/config")
+@protected_router.get("/config")
 async def get_config() -> dict:
     cfg = load_config()
     return {
@@ -58,10 +60,11 @@ async def get_config() -> dict:
         "fallback_models": cfg.fallback_models,
         "workspace": cfg.workspace,
         "providers": cfg.providers,
+        "tool_permissions": cfg.tool_permissions,
     }
 
 
-@api_router.post("/setup")
+@protected_router.post("/setup")
 async def complete_setup(req: SetupRequest) -> dict:
     """首次配置向导完成"""
     cfg = load_config()
@@ -81,18 +84,21 @@ async def complete_setup(req: SetupRequest) -> dict:
 
     cfg.primary_model = f"{req.provider_id}/{req.model_id}"
     if req.workspace:
-        cfg.workspace = str(Path(req.workspace).resolve())
+        workspace_path = Path(req.workspace).expanduser()
+        if not workspace_path.exists():
+            raise HTTPException(400, "工作目录不存在")
+        cfg.workspace = str(workspace_path.resolve())
     cfg.setup_complete = True
     save_config(cfg)
     return {"success": True, "primary_model": cfg.primary_model}
 
 
-@api_router.get("/providers/builtin")
+@protected_router.get("/providers/builtin")
 async def get_builtin_providers() -> dict:
     return {"providers": BUILTIN_PROVIDERS}
 
 
-@api_router.post("/providers")
+@protected_router.post("/providers")
 async def add_provider(req: ProviderRequest) -> dict:
     """添加自定义 provider"""
     cfg = load_config()
@@ -107,7 +113,7 @@ async def add_provider(req: ProviderRequest) -> dict:
     return {"success": True}
 
 
-@api_router.delete("/providers/{provider_id}")
+@protected_router.delete("/providers/{provider_id}")
 async def remove_provider(provider_id: str) -> dict:
     """删除自定义 provider"""
     cfg = load_config()
@@ -117,7 +123,7 @@ async def remove_provider(provider_id: str) -> dict:
     return {"success": True}
 
 
-@api_router.post("/config/model")
+@protected_router.post("/config/model")
 async def set_primary_model(body: dict) -> dict:
     """设置主模型"""
     cfg = load_config()
@@ -125,6 +131,32 @@ async def set_primary_model(body: dict) -> dict:
     cfg.fallback_models = body.get("fallbacks", cfg.fallback_models)
     save_config(cfg)
     return {"success": True, "primary_model": cfg.primary_model}
+
+
+@protected_router.post("/config/tool-permissions")
+async def set_tool_permissions(body: dict) -> dict:
+    default_mode = str(body.get("default_mode", "allow")).lower()
+    if default_mode not in {"allow", "deny", "prompt"}:
+        raise HTTPException(400, "default_mode 必须是 allow / deny / prompt")
+
+    raw_tool_modes = body.get("tool_modes", {})
+    if not isinstance(raw_tool_modes, dict):
+        raise HTTPException(400, "tool_modes 必须是对象")
+
+    normalized_tool_modes: dict[str, str] = {}
+    for tool_name, mode in raw_tool_modes.items():
+        normalized_mode = str(mode).lower()
+        if normalized_mode not in {"allow", "deny", "prompt"}:
+            raise HTTPException(400, f"工具 '{tool_name}' 的模式无效")
+        normalized_tool_modes[str(tool_name)] = normalized_mode
+
+    cfg = load_config()
+    cfg.tool_permissions = {
+        "default_mode": default_mode,
+        "tool_modes": normalized_tool_modes,
+    }
+    save_config(cfg)
+    return {"success": True, "tool_permissions": cfg.tool_permissions}
 
 
 # ──────────────────────────────────────────────
@@ -159,7 +191,7 @@ def _build_tree(path: Path, workspace: Path, depth: int = 0, max_depth: int = 5)
     return items
 
 
-@api_router.get("/files")
+@protected_router.get("/files")
 async def list_files(path: str = ".") -> dict:
     cfg = load_config()
     workspace = Path(cfg.workspace).resolve()
@@ -176,7 +208,7 @@ async def list_files(path: str = ".") -> dict:
     return {"type": "dir", "path": path, "tree": tree, "workspace": str(workspace)}
 
 
-@api_router.get("/files/read")
+@protected_router.get("/files/read")
 async def read_file(path: str) -> dict:
     cfg = load_config()
     workspace = Path(cfg.workspace).resolve()
@@ -194,13 +226,14 @@ async def read_file(path: str) -> dict:
         raise HTTPException(500, str(e))
 
 
-@api_router.post("/config/workspace")
+@protected_router.post("/config/workspace")
 async def set_workspace(body: dict) -> dict:
     workspace = body.get("workspace", "")
-    if not workspace or not Path(workspace).exists():
+    expanded_workspace = Path(workspace).expanduser() if workspace else None
+    if not expanded_workspace or not expanded_workspace.exists():
         raise HTTPException(400, "目录不存在")
     cfg = load_config()
-    cfg.workspace = str(Path(workspace).resolve())
+    cfg.workspace = str(expanded_workspace.resolve())
     save_config(cfg)
     return {"success": True, "workspace": cfg.workspace}
 
@@ -219,7 +252,7 @@ class UpdateTitleRequest(BaseModel):
     title: str
 
 
-@api_router.get("/conversations")
+@protected_router.get("/conversations")
 async def get_conversations(project_id: str | None = None) -> dict:
     """获取对话列表，支持按 project_id 筛选"""
     conversations = list_conversations(project_id)
@@ -239,13 +272,13 @@ async def get_conversations(project_id: str | None = None) -> dict:
     }
 
 
-@api_router.post("/conversations")
+@protected_router.post("/conversations")
 async def post_create_conversation(req: CreateConversationRequest) -> dict:
     conv = create_conversation(req.title, req.project_id, req.model)
     return {"success": True, "conversation": conv.to_dict()}
 
 
-@api_router.get("/conversations/{conv_id}")
+@protected_router.get("/conversations/{conv_id}")
 async def get_conversation_detail(conv_id: str) -> dict:
     conv = get_conversation(conv_id)
     if not conv:
@@ -253,13 +286,13 @@ async def get_conversation_detail(conv_id: str) -> dict:
     return {"conversation": conv.to_dict()}
 
 
-@api_router.delete("/conversations/{conv_id}")
+@protected_router.delete("/conversations/{conv_id}")
 async def del_conversation(conv_id: str) -> dict:
     ok = delete_conversation(conv_id)
     return {"success": ok}
 
 
-@api_router.patch("/conversations/{conv_id}/title")
+@protected_router.patch("/conversations/{conv_id}/title")
 async def patch_conversation_title(conv_id: str, req: UpdateTitleRequest) -> dict:
     conv = update_conversation_title(conv_id, req.title)
     if not conv:
@@ -267,7 +300,7 @@ async def patch_conversation_title(conv_id: str, req: UpdateTitleRequest) -> dic
     return {"success": True, "conversation": conv.to_dict()}
 
 
-@api_router.post("/conversations/{conv_id}/messages")
+@protected_router.post("/conversations/{conv_id}/messages")
 async def post_append_messages(conv_id: str, body: dict) -> dict:
     messages = body.get("messages", [])
     conv = append_messages(conv_id, messages)
@@ -296,20 +329,24 @@ class UpdateProjectRequest(BaseModel):
     model: str | None = None
 
 
-@api_router.get("/projects")
+@protected_router.get("/projects")
 async def get_projects() -> dict:
     cfg = load_config()
     return {"projects": cfg.projects}
 
 
-@api_router.post("/projects")
+@protected_router.post("/projects")
 async def create_new_project(req: CreateProjectRequest) -> dict:
     """创建新项目"""
     cfg = load_config()
+    project_path = Path(req.path).expanduser()
+    if not project_path.exists() or not project_path.is_dir():
+        raise HTTPException(400, "项目目录不存在")
+
     project = {
         "id": str(uuid.uuid4()),
         "name": req.name,
-        "path": str(Path(req.path).resolve()),
+        "path": str(project_path.resolve()),
         "model": req.model,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -321,7 +358,7 @@ async def create_new_project(req: CreateProjectRequest) -> dict:
     return {"success": True, "project": project}
 
 
-@api_router.get("/projects/{project_id}")
+@protected_router.get("/projects/{project_id}")
 async def get_project_detail(project_id: str) -> dict:
     cfg = load_config()
     for p in cfg.projects:
@@ -330,7 +367,7 @@ async def get_project_detail(project_id: str) -> dict:
     raise HTTPException(404, "项目不存在")
 
 
-@api_router.patch("/projects/{project_id}")
+@protected_router.patch("/projects/{project_id}")
 async def update_project(project_id: str, req: UpdateProjectRequest) -> dict:
     cfg = load_config()
     for p in cfg.projects:
@@ -338,7 +375,10 @@ async def update_project(project_id: str, req: UpdateProjectRequest) -> dict:
             if req.name is not None:
                 p["name"] = req.name
             if req.path is not None:
-                p["path"] = str(Path(req.path).resolve())
+                project_path = Path(req.path).expanduser()
+                if not project_path.exists() or not project_path.is_dir():
+                    raise HTTPException(400, "项目目录不存在")
+                p["path"] = str(project_path.resolve())
             if req.model is not None:
                 p["model"] = req.model
             save_config(cfg)
@@ -346,7 +386,7 @@ async def update_project(project_id: str, req: UpdateProjectRequest) -> dict:
     raise HTTPException(404, "项目不存在")
 
 
-@api_router.delete("/projects/{project_id}")
+@protected_router.delete("/projects/{project_id}")
 async def delete_project(project_id: str) -> dict:
     cfg = load_config()
     original_len = len(cfg.projects)
@@ -361,7 +401,7 @@ async def delete_project(project_id: str) -> dict:
     return {"success": True}
 
 
-@api_router.post("/projects/{project_id}/switch")
+@protected_router.post("/projects/{project_id}/switch")
 async def switch_project(project_id: str) -> dict:
     cfg = load_config()
     for p in cfg.projects:
@@ -395,7 +435,7 @@ def get_home_path() -> Path:
     return Path.home()
 
 
-@api_router.get("/discover-tools")
+@protected_router.get("/discover-tools")
 async def discover_local_tools() -> dict:
     """发现本地已安装的 AI CLI 工具"""
     home = get_home_path()
@@ -525,8 +565,7 @@ async def discover_local_tools() -> dict:
     
     return {"tools": tools}
 
-
-@api_router.post("/import-from-tool")
+@protected_router.post("/import-from-tool")
 async def import_from_tool(body: dict) -> dict:
     """从其他 AI 工具导入项目"""
     tool_id = body.get("tool_id")
@@ -553,3 +592,6 @@ async def import_from_tool(body: dict) -> dict:
             return {"success": True, "projects": [{"name": "当前项目", "path": cfg.workspace}]}
     
     return {"success": True, "projects": []}
+
+
+api_router.include_router(protected_router)

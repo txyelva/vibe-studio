@@ -125,6 +125,14 @@ class Config:
     providers: dict[str, dict] = field(default_factory=dict)
     projects: list[dict] = field(default_factory=list)
     auth: dict = field(default_factory=dict)  # 认证配置
+    tool_permissions: dict = field(default_factory=lambda: {
+        "default_mode": "allow",
+        "tool_modes": {
+            "bash_exec": "prompt",
+            "write_file": "prompt",
+            "str_replace": "prompt",
+        },
+    })
 
     def get_provider_config(self, provider_id: str) -> Optional[ProviderConfig]:
         data = self.providers.get(provider_id)

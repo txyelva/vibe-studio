@@ -7,11 +7,11 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 from ..config import Config, ProviderConfig, load_config
 from .providers import DELTA_TEXT, DONE, TOOL_CALL, create_provider
-from .tools import TOOL_DEFINITIONS, ToolExecutor
+from .tools import TOOL_DEFINITIONS, ToolExecutor, ToolPermissionPolicy
 
 SYSTEM_PROMPT = """你是 Vibe Studio，一个专业的 AI 编程助手。
 
@@ -40,6 +40,7 @@ async def run_agent(
     workspace: str,
     config: Config,
     conversation_history: list[dict],
+    approval_resolver: Callable[[str, dict[str, Any]], Awaitable[dict[str, Any]]] | None = None,
 ) -> AsyncGenerator[dict, None]:
     """
     运行一次 Agent 对话循环。
@@ -68,7 +69,10 @@ async def run_agent(
         return
 
     provider = create_provider(provider_cfg, model_id)
-    executor = ToolExecutor(workspace)
+    executor = ToolExecutor(
+        workspace,
+        permission_policy=ToolPermissionPolicy.from_config(config.tool_permissions),
+    )
 
     # 构建对话历史（直接修改传入的列表，方便调用者持久化）
     messages = conversation_history
@@ -129,7 +133,23 @@ async def run_agent(
         tool_results = []
         for tc in tool_calls_this_turn:
             yield {"type": "tool_start", "name": tc["name"], "args": tc["args"]}
-            result = await executor.execute(tc["name"], tc["args"])
+            permission_mode = executor.permission_policy.mode_for(tc["name"])
+            if permission_mode == "prompt":
+                if approval_resolver is None:
+                    result = {"error": f"工具 '{tc['name']}' 需要人工审批后才能执行", "permission_denied": True}
+                else:
+                    approval = await approval_resolver(tc["name"], tc["args"])
+                    if approval.get("approved"):
+                        result = await executor.execute(
+                            tc["name"],
+                            tc["args"],
+                            enforce_permission_policy=False,
+                        )
+                    else:
+                        reason = str(approval.get("reason") or "用户拒绝了工具执行")
+                        result = {"error": reason, "permission_denied": True}
+            else:
+                result = await executor.execute(tc["name"], tc["args"])
             yield {"type": "tool_end", "name": tc["name"], "result": result}
 
             # 文件变化事件（给前端高亮展示）

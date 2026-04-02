@@ -3,10 +3,12 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
+from uuid import uuid4
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from ..agent.loop import run_agent
+from ..auth import is_auth_enabled, verify_token
 from ..config import load_config
 from ..conversation import (
     get_conversation,
@@ -64,6 +66,12 @@ async def get_status_info(conv_id: str | None, config) -> dict:
 
 @ws_router.websocket("/ws/agent")
 async def agent_websocket(websocket: WebSocket) -> None:
+    if is_auth_enabled():
+        token = websocket.query_params.get("token")
+        if not token or verify_token(token) is None:
+            await websocket.close(code=4401, reason="Not authenticated")
+            return
+
     await websocket.accept()
 
     # 当前连接的对话 ID 和历史
@@ -72,6 +80,48 @@ async def agent_websocket(websocket: WebSocket) -> None:
 
     async def send(data: dict) -> None:
         await websocket.send_text(json.dumps(data, ensure_ascii=False))
+
+    async def resolve_tool_approval(tool_name: str, args: dict) -> dict:
+        approval_id = uuid4().hex
+        await send({
+            "type": "approval_required",
+            "approval_id": approval_id,
+            "tool_name": tool_name,
+            "args": args,
+            "message": f"工具 '{tool_name}' 需要人工审批后才能执行",
+        })
+
+        while True:
+            raw_approval = await websocket.receive_text()
+            try:
+                approval_msg = json.loads(raw_approval)
+            except json.JSONDecodeError:
+                await send({"type": "error", "text": "审批消息格式错误，需要 JSON"})
+                continue
+
+            approval_type = approval_msg.get("type")
+            if approval_type == "ping":
+                await send({"type": "pong"})
+                continue
+
+            if approval_type != "tool_approval":
+                await send({"type": "error", "text": "当前正在等待工具审批响应"})
+                continue
+
+            if approval_msg.get("approval_id") != approval_id:
+                await send({"type": "error", "text": "审批 ID 不匹配"})
+                continue
+
+            approved = bool(approval_msg.get("approved"))
+            reason = str(approval_msg.get("reason") or "").strip()
+            await send({
+                "type": "approval_resolved",
+                "approval_id": approval_id,
+                "tool_name": tool_name,
+                "approved": approved,
+                "reason": reason or None,
+            })
+            return {"approved": approved, "reason": reason}
 
     try:
         while True:
@@ -157,6 +207,7 @@ async def agent_websocket(websocket: WebSocket) -> None:
                     workspace=cfg.workspace,
                     config=config_for_run,
                     conversation_history=conversation_history,
+                    approval_resolver=resolve_tool_approval,
                 ):
                     await send(event)
 

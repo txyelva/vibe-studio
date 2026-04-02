@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AppConfig, ChatMessage, FileNode, Conversation, Project, AgentEvent } from "./types";
+import type { AppConfig, ChatMessage, FileNode, Conversation, Project, AgentEvent, PendingApproval } from "./types";
 import { AgentSocket, api } from "./api";
 
 function formatStatusMessage(event: AgentEvent): string {
@@ -84,6 +84,22 @@ function createSocket(
           msgs[msgs.length - 1] = { ...last, events: [...(last.events ?? []), event] };
           return { messages: msgs };
         }
+        case "approval_required": {
+          const pendingApproval = {
+            approvalId: event.approval_id,
+            toolName: event.tool_name,
+            args: event.args,
+            message: event.message,
+          };
+          if (!last || last.role !== "assistant") return { pendingApproval };
+          msgs[msgs.length - 1] = { ...last, events: [...(last.events ?? []), event] };
+          return { messages: msgs, pendingApproval };
+        }
+        case "approval_resolved": {
+          if (!last || last.role !== "assistant") return { pendingApproval: null };
+          msgs[msgs.length - 1] = { ...last, events: [...(last.events ?? []), event] };
+          return { messages: msgs, pendingApproval: null };
+        }
         case "file_changed": {
           if (!last || last.role !== "assistant") return {};
           msgs[msgs.length - 1] = {
@@ -101,7 +117,7 @@ function createSocket(
         case "done": {
           if (!last || last.role !== "assistant") return { isAgentRunning: false };
           msgs[msgs.length - 1] = { ...last, isStreaming: false };
-          return { messages: msgs, isAgentRunning: false };
+          return { messages: msgs, isAgentRunning: false, pendingApproval: null };
         }
         case "error": {
           if (!last || last.role !== "assistant") return {};
@@ -110,7 +126,7 @@ function createSocket(
             content: last.content + `\n\n❌ ${event.text}`,
             isStreaming: false,
           };
-          return { messages: msgs, isAgentRunning: false };
+          return { messages: msgs, isAgentRunning: false, pendingApproval: null };
         }
         default:
           return {};
@@ -128,6 +144,7 @@ interface AppState {
   selectedFile: { path: string; content: string } | null;
   loadingFile: boolean;
   messages: ChatMessage[];
+  pendingApproval: PendingApproval | null;
   isAgentRunning: boolean;
   wsConnected: boolean;
   showSettings: boolean;
@@ -152,6 +169,7 @@ interface AppState {
   loadFiles: () => Promise<void>;
   openFile: (path: string) => Promise<void>;
   sendMessage: (text: string) => void;
+  respondToApproval: (approved: boolean, reason?: string) => void;
   clearChat: () => void;
   setShowSettings: (v: boolean) => void;
 
@@ -176,6 +194,7 @@ export const useStore = create<AppState>((set, get) => ({
   selectedFile: null,
   loadingFile: false,
   messages: [],
+  pendingApproval: null,
   isAgentRunning: false,
   wsConnected: false,
   showSettings: false,
@@ -300,9 +319,15 @@ export const useStore = create<AppState>((set, get) => ({
     socket.send(text, convId, cfg?.workspace, projectId);
   },
 
+  respondToApproval: (approved: boolean, reason?: string) => {
+    const approval = get().pendingApproval;
+    if (!socket || !approval) return;
+    socket.respondToApproval(approval.approvalId, approved, reason);
+  },
+
   clearChat: () => {
     socket?.clear();
-    set(() => ({ messages: [], currentConversationId: null }));
+    set(() => ({ messages: [], currentConversationId: null, pendingApproval: null }));
   },
 
   setShowSettings: (v) => set(() => ({ showSettings: v })),
@@ -325,6 +350,7 @@ export const useStore = create<AppState>((set, get) => ({
         conversations: [conversation, ...s.conversations],
         currentConversationId: conversation.id,
         messages: [],
+        pendingApproval: null,
       }));
       return conversation.id;
     } catch (e) {
@@ -346,6 +372,7 @@ export const useStore = create<AppState>((set, get) => ({
         set(() => ({
           currentConversationId: id,
           messages,
+          pendingApproval: null,
         }));
       }
     } catch (e) {
@@ -354,7 +381,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   switchConversation: async (id: string) => {
-    set(() => ({ currentConversationId: id, messages: [] }));
+    set(() => ({ currentConversationId: id, messages: [], pendingApproval: null }));
     // 通过 API 加载对话消息
     await get().loadConversation(id);
     // 同时通过 socket 通知后端（保持兼容性）

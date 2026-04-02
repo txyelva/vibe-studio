@@ -24,6 +24,10 @@ export interface AppConfig {
   fallback_models: string[];
   workspace: string;
   providers: Record<string, ProviderConfig>;
+  tool_permissions?: {
+    default_mode: "allow" | "deny" | "prompt";
+    tool_modes: Record<string, "allow" | "deny" | "prompt">;
+  };
 }
 
 export interface Conversation {
@@ -49,6 +53,8 @@ export type AgentEvent =
   | { type: "thinking"; text: string }
   | { type: "tool_start"; name: string; args: Record<string, unknown> }
   | { type: "tool_end"; name: string; result: Record<string, unknown> }
+  | { type: "approval_required"; approval_id: string; tool_name: string; args: Record<string, unknown>; message: string }
+  | { type: "approval_resolved"; approval_id: string; tool_name: string; approved: boolean; reason?: string | null }
   | { type: "file_changed"; path: string; old_content?: string; new_content?: string }
   | { type: "error"; text: string }
   | { type: "done" }
@@ -67,4 +73,11 @@ export interface ChatMessage {
   events?: AgentEvent[];
   isStreaming?: boolean;
   fileChanges?: Array<{ path: string; old_content?: string; new_content?: string }>;
+}
+
+export interface PendingApproval {
+  approvalId: string;
+  toolName: string;
+  args: Record<string, unknown>;
+  message: string;
 }

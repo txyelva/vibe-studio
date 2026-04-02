@@ -4,7 +4,7 @@ import remarkGfm from "remark-gfm";
 import { useNavigate, useParams } from "react-router";
 import { useStore } from "../store";
 import { useMobile } from "../hooks/useMobile";
-import type { AgentEvent, ChatMessage, Conversation } from "../types";
+import type { AgentEvent, ChatMessage, Conversation, PendingApproval } from "../types";
 
 function getToolLabel(name: string) {
   const labels: Record<string, string> = {
@@ -246,7 +246,107 @@ function ToolCallItem({ event }: { event: AgentEvent }) {
       </div>
     );
   }
+  if (event.type === "approval_required") {
+    return (
+      <div style={{ marginTop: 6, padding: "8px 10px", backgroundColor: "rgba(255,170,0,0.08)", border: "1px solid rgba(255,170,0,0.2)", fontSize: 10, color: "#ffaa00" }}>
+        等待审批: {getToolLabel(event.tool_name)}
+      </div>
+    );
+  }
+  if (event.type === "approval_resolved") {
+    return (
+      <div style={{ marginTop: 6, padding: "8px 10px", backgroundColor: event.approved ? "rgba(0,255,136,0.05)" : "rgba(255,68,68,0.08)", border: `1px solid ${event.approved ? "rgba(0,255,136,0.15)" : "rgba(255,68,68,0.2)"}`, fontSize: 10, color: event.approved ? "#00ff88" : "#ff4444" }}>
+        {event.approved ? "已批准执行" : `已拒绝执行${event.reason ? `: ${event.reason}` : ""}`}
+      </div>
+    );
+  }
   return null;
+}
+
+function ApprovalPanel({
+  approval,
+  onApprove,
+  onReject,
+}: {
+  approval: PendingApproval;
+  onApprove: () => void;
+  onReject: (reason?: string) => void;
+}) {
+  const [reason, setReason] = useState("");
+
+  return (
+    <div
+      style={{
+        margin: "0 0 16px",
+        padding: "16px 18px",
+        backgroundColor: "#14100a",
+        border: "1px solid rgba(255,170,0,0.35)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: "bold", color: "#ffaa00" }}>等待审批</div>
+          <div style={{ fontSize: 11, color: "#b8a37a", marginTop: 4 }}>{approval.message}</div>
+        </div>
+        <div style={{ padding: "4px 8px", border: "1px solid rgba(255,170,0,0.25)", fontSize: 10, color: "#ffaa00" }}>
+          {getToolLabel(approval.toolName)}
+        </div>
+      </div>
+
+      <div style={{ padding: "10px 12px", backgroundColor: "#0c0c0c", border: "1px solid #2f2f2f", fontSize: 11, color: "#ccc", lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+        {JSON.stringify(approval.args, null, 2)}
+      </div>
+
+      <input
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="可选：拒绝原因"
+        style={{
+          padding: "10px 12px",
+          backgroundColor: "#0c0c0c",
+          border: "1px solid #2f2f2f",
+          color: "#fff",
+          fontFamily: "inherit",
+          fontSize: 12,
+        }}
+      />
+
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+        <button
+          onClick={() => onReject(reason.trim() || undefined)}
+          style={{
+            padding: "8px 14px",
+            backgroundColor: "transparent",
+            border: "1px solid #ff4444",
+            color: "#ff4444",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            fontSize: 12,
+          }}
+        >
+          拒绝
+        </button>
+        <button
+          onClick={onApprove}
+          style={{
+            padding: "8px 14px",
+            backgroundColor: "#00ff88",
+            border: "none",
+            color: "#0c0c0c",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            fontSize: 12,
+            fontWeight: "bold",
+          }}
+        >
+          批准并继续
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function MessageItem({ msg }: { msg: ChatMessage }) {
@@ -314,7 +414,7 @@ function MessageItem({ msg }: { msg: ChatMessage }) {
             gap: 12,
           }}
         >
-          {msg.events?.filter((e) => e.type === "tool_start" || e.type === "tool_end" || e.type === "file_changed").map((e, i) => <ToolCallItem key={i} event={e} />)}
+          {msg.events?.filter((e) => e.type === "tool_start" || e.type === "tool_end" || e.type === "file_changed" || e.type === "approval_required" || e.type === "approval_resolved").map((e, i) => <ToolCallItem key={i} event={e} />)}
 
           <div style={{ fontSize: 13, color: "#fff", lineHeight: "1.6" }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
@@ -725,8 +825,10 @@ export default function VibeChat() {
   
   const {
     messages,
+    pendingApproval,
     isAgentRunning,
     sendMessage,
+    respondToApproval,
     clearChat,
     wsConnected,
     config,
@@ -1164,7 +1266,14 @@ export default function VibeChat() {
               {messages.map((msg) => (
                 <MessageItem key={msg.id} msg={msg} />
               ))}
-              {isAgentRunning && <ThinkingIndicator />}
+              {pendingApproval && (
+                <ApprovalPanel
+                  approval={pendingApproval}
+                  onApprove={() => respondToApproval(true)}
+                  onReject={(reason) => respondToApproval(false, reason)}
+                />
+              )}
+              {isAgentRunning && !pendingApproval && <ThinkingIndicator />}
               <div ref={bottomRef} />
             </div>
           )}

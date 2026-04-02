@@ -81,10 +81,19 @@ export const api = {
     del<{ success: boolean }>(`/api/providers/${providerId}`),
 
   testProvider: (providerId: string) =>
-    post<{ success: boolean; error?: string }>(`/api/providers/${providerId}/test`, {}),
+    post<{ success: boolean; error?: string }>(`/api/models/${providerId}/test`, {}),
 
   setModel: (model: string, fallbacks: string[]) =>
     post<{ success: boolean }>("/api/config/model", { model, fallbacks }),
+
+  setToolPermissions: (
+    defaultMode: "allow" | "deny" | "prompt",
+    toolModes: Record<string, "allow" | "deny" | "prompt">
+  ) =>
+    post<{ success: boolean; tool_permissions: { default_mode: string; tool_modes: Record<string, string> } }>(
+      "/api/config/tool-permissions",
+      { default_mode: defaultMode, tool_modes: toolModes }
+    ),
 
   setWorkspace: (workspace: string) =>
     post<{ success: boolean; workspace: string }>("/api/config/workspace", { workspace }),
@@ -132,12 +141,21 @@ export class AgentSocket {
 
   connect() {
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${protocol}//${location.host}/ws/agent`;
+    const token = getToken();
+    const url = new URL(`${protocol}//${location.host}/ws/agent`);
+    if (token) {
+      url.searchParams.set("token", token);
+    }
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => this.onOpen?.();
-    this.ws.onclose = () => {
+    this.ws.onclose = (event) => {
       this.onClose?.();
+      if (event.code === 4401) {
+        localStorage.removeItem("vibe_token");
+        window.location.href = "/login";
+        return;
+      }
       this.reconnectTimer = setTimeout(() => this.connect(), 3000);
     };
     this.ws.onmessage = (e) => {
@@ -169,6 +187,12 @@ export class AgentSocket {
   clear() {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ type: "clear" }));
+    }
+  }
+
+  respondToApproval(approvalId: string, approved: boolean, reason?: string) {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "tool_approval", approval_id: approvalId, approved, reason }));
     }
   }
 

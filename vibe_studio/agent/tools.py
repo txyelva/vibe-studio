@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import os
 import subprocess
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -113,8 +114,9 @@ TOOL_DEFINITIONS = [
 # ──────────────────────────────────────────────
 
 class ToolExecutor:
-    def __init__(self, workspace: str) -> None:
+    def __init__(self, workspace: str, permission_policy: "ToolPermissionPolicy | None" = None) -> None:
         self.workspace = Path(workspace).resolve()
+        self.permission_policy = permission_policy or ToolPermissionPolicy()
 
     def _safe_path(self, path: str) -> Path:
         """确保路径在工作区内（防止路径穿越）"""
@@ -123,11 +125,21 @@ class ToolExecutor:
             raise ValueError(f"路径越界: {path}")
         return p
 
-    async def execute(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    async def execute(
+        self,
+        tool_name: str,
+        args: dict[str, Any],
+        *,
+        enforce_permission_policy: bool = True,
+    ) -> dict[str, Any]:
         """执行工具，返回结果 dict"""
         handler = getattr(self, f"_tool_{tool_name}", None)
         if not handler:
             return {"error": f"未知工具: {tool_name}"}
+        if enforce_permission_policy:
+            permission_error = self.permission_policy.authorize(tool_name, args)
+            if permission_error is not None:
+                return {"error": permission_error, "permission_denied": True}
         try:
             result = await handler(**args)
             return result
@@ -241,3 +253,30 @@ class ToolExecutor:
             return {"error": "命令执行超时（30s）"}
         except Exception as e:
             return {"error": str(e)}
+
+
+@dataclass(frozen=True)
+class ToolPermissionPolicy:
+    default_mode: str = "allow"
+    tool_modes: dict[str, str] = field(default_factory=dict)
+
+    @classmethod
+    def from_config(cls, config: dict[str, Any] | None = None) -> "ToolPermissionPolicy":
+        data = config or {}
+        return cls(
+            default_mode=str(data.get("default_mode", "allow")).lower(),
+            tool_modes={str(k).lower(): str(v).lower() for k, v in dict(data.get("tool_modes", {})).items()},
+        )
+
+    def authorize(self, tool_name: str, args: dict[str, Any]) -> str | None:
+        mode = self.mode_for(tool_name)
+        if mode == "allow":
+            return None
+        if mode == "deny":
+            return f"工具 '{tool_name}' 被权限策略禁止"
+        if mode == "prompt":
+            return f"工具 '{tool_name}' 需要人工审批后才能执行"
+        return f"工具 '{tool_name}' 的权限模式无效: {mode}"
+
+    def mode_for(self, tool_name: str) -> str:
+        return self.tool_modes.get(tool_name.lower(), self.default_mode)

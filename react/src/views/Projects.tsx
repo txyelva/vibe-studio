@@ -80,18 +80,10 @@ export default function Projects() {
 
   async function handleCreate() {
     if (!createForm.name || !validatePath(createForm.path) || !createForm.model) return;
-    
-    // 展开 ~ 为 home 目录
-    let resolvedPath = createForm.path;
-    if (resolvedPath.startsWith("~/")) {
-      resolvedPath = resolvedPath.replace("~", "/Users/" + (config?.username || "user"));
-    } else if (resolvedPath === "~") {
-      resolvedPath = "/Users/" + (config?.username || "user");
-    }
-    
+
     setCreating(true);
     try {
-      await createProject({ ...createForm, path: resolvedPath });
+      await createProject(createForm);
       setShowCreateModal(false);
       setCreateForm({ name: "", path: "", model: config?.primary_model || "" });
       setPathError("");
