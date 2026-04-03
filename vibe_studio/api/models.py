@@ -19,21 +19,29 @@ PROVIDER_PRESETS = {
         "name": "OpenAI",
         "api_type": "openai",
         "base_url": "https://api.openai.com/v1",
-        "auth_types": ["api_key", "oauth"],
+        "auth_types": ["api_key"],
         "models": [
             {"id": "gpt-4o", "name": "GPT-4o"},
             {"id": "gpt-4o-mini", "name": "GPT-4o Mini"},
             {"id": "o3-mini", "name": "o3-mini"},
             {"id": "o1", "name": "o1"},
         ],
-        "oauth_api_type": "openai_codex",
-        "oauth_base_url": "https://chatgpt.com/backend-api",
-        "oauth_models": [
-            {"id": "gpt-5.4", "name": "GPT-5.4"},
-            {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex"},
-            {"id": "gpt-5.2", "name": "GPT-5.2"},
-        ],
         "docs_url": "https://platform.openai.com/api-keys",
+    },
+    "openai_codex": {
+        "name": "OpenAI ChatGPT OAuth (Codex)",
+        "api_type": "openai_codex",
+        "base_url": "https://chatgpt.com/backend-api",
+        "auth_types": ["oauth"],
+        "models": [
+            {"id": "gpt-5.4", "name": "GPT-5.4"},
+            {"id": "gpt-5.4-mini", "name": "GPT-5.4 Mini"},
+            {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex"},
+            {"id": "gpt-5.2-codex", "name": "GPT-5.2 Codex"},
+            {"id": "gpt-5.1-codex-max", "name": "GPT-5.1 Codex Max"},
+            {"id": "gpt-5.1-codex-mini", "name": "GPT-5.1 Codex Mini"},
+        ],
+        "docs_url": "https://chatgpt.com",
     },
     "anthropic": {
         "name": "Anthropic (Claude)",
@@ -271,7 +279,11 @@ async def create_model(req: CreateModelRequest) -> dict:
         counter += 1
     
     # 构建模型列表
-    preset_models = preset.get("oauth_models", []) if req.auth_type == "oauth" else preset["models"]
+    preset_models = (
+        preset.get("oauth_models") or preset["models"]
+        if req.auth_type == "oauth"
+        else preset["models"]
+    )
     selected_models = []
     for model_id in req.selected_models:
         model_info = next((m for m in preset_models if m["id"] == model_id), None)
@@ -386,7 +398,7 @@ async def start_provider_oauth(provider_id: str) -> dict:
     provider["api_type"] = "openai_codex"
     provider["base_url"] = provider.get("base_url") or "https://chatgpt.com/backend-api"
     if not provider.get("models"):
-        provider["models"] = PROVIDER_PRESETS["openai"]["oauth_models"]
+        provider["models"] = PROVIDER_PRESETS["openai_codex"]["models"]
     save_config(cfg)
 
     login = openai_codex_oauth_manager.start_login(provider_id)

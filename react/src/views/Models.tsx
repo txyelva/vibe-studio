@@ -948,9 +948,13 @@ export default function Models() {
                     <div style={{ padding: 20, backgroundColor: "#0c0c0c", border: "1px solid #2f2f2f", textAlign: "left" }}>
                       <div style={{ fontSize: 14, color: "#fff", marginBottom: 8 }}>OAuth Authentication</div>
                       <div style={{ fontSize: 12, color: "#8a8a8a", lineHeight: 1.7 }}>
-                        这一版会先创建 Provider，再在编辑面板里拉起 OpenAI 登录。
-                        {selectedPreset.id === "openai" && (
-                          <span> 创建后会切到 ChatGPT OAuth / Codex 模式，默认使用 GPT-5.4 系列模型。</span>
+                        {selectedPreset.id === "openai_codex" ? (
+                          <span>
+                            这会创建一个独立的 ChatGPT OAuth / Codex Provider。创建后请在编辑面板里点击
+                            “Login with OpenAI”，完成浏览器授权。
+                          </span>
+                        ) : (
+                          <span>创建后可在编辑面板里继续完成 OAuth 登录。</span>
                         )}
                       </div>
                     </div>
@@ -1252,10 +1256,10 @@ export default function Models() {
                 {selectedProvider.auth_type === "oauth" && (
                   <div style={{ padding: "16px", backgroundColor: "#0c0c0c", border: "1px solid #2f2f2f" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                      <div>
-                        <div style={{ fontSize: 13, color: "#fff", marginBottom: 4 }}>OpenAI OAuth</div>
+                        <div>
+                        <div style={{ fontSize: 13, color: "#fff", marginBottom: 4 }}>ChatGPT OAuth / Codex</div>
                         <div style={{ fontSize: 12, color: "#6a6a6a" }}>
-                          使用 ChatGPT Plus / Pro 登录，授权后线程将走 Codex Responses。
+                          使用 ChatGPT Plus / Pro 登录。这个 Provider 会直接走 Codex Responses，不会再切换到另一套 Base URL。
                         </div>
                       </div>
                       <div style={{ display: "flex", gap: 8 }}>

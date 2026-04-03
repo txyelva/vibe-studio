@@ -252,7 +252,9 @@ class OpenAICodexProvider(LLMProvider):
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             async with client.stream("POST", url, headers=headers, json=body) as response:
-                response.raise_for_status()
+                if response.status_code >= 400:
+                    error_text = (await response.aread()).decode("utf-8", errors="replace")
+                    raise RuntimeError(f"Codex API {response.status_code}: {error_text or response.reason_phrase}")
                 async for event in self._parse_sse(response):
                     event_type = event.get("type")
                     if event_type == "response.output_text.delta":
@@ -263,8 +265,9 @@ class OpenAICodexProvider(LLMProvider):
                         item = event.get("item") or {}
                         if item.get("type") == "function_call":
                             call_id = str(item.get("call_id") or "")
+                            item_id = str(item.get("id") or "")
                             pending_tool_calls[call_id] = {
-                                "id": call_id,
+                                "id": self._compose_tool_call_id(call_id, item_id),
                                 "name": str(item.get("name") or ""),
                                 "args_json": str(item.get("arguments") or ""),
                             }
@@ -289,7 +292,12 @@ class OpenAICodexProvider(LLMProvider):
                         item = event.get("item") or {}
                         if item.get("type") == "function_call":
                             call_id = str(item.get("call_id") or "")
-                            pending = pending_tool_calls.setdefault(call_id, {"id": call_id, "name": "", "args_json": ""})
+                            item_id = str(item.get("id") or "")
+                            pending = pending_tool_calls.setdefault(
+                                call_id,
+                                {"id": self._compose_tool_call_id(call_id, item_id), "name": "", "args_json": ""},
+                            )
+                            pending["id"] = self._compose_tool_call_id(call_id, item_id)
                             pending["name"] = str(item.get("name") or pending["name"])
                             pending["args_json"] = str(item.get("arguments") or pending["args_json"])
 
@@ -317,9 +325,10 @@ class OpenAICodexProvider(LLMProvider):
                     tool_outputs = []
                     for block in content:
                         if isinstance(block, dict) and block.get("type") == "tool_result":
+                            call_id, _ = self._split_tool_call_id(str(block.get("tool_use_id") or ""))
                             tool_outputs.append({
                                 "type": "function_call_output",
-                                "call_id": block.get("tool_use_id"),
+                                "call_id": call_id,
                                 "output": block.get("content", ""),
                             })
                     converted.extend(tool_outputs)
@@ -333,9 +342,11 @@ class OpenAICodexProvider(LLMProvider):
                 if tool_calls:
                     for tool_call in tool_calls:
                         function = tool_call.get("function") or {}
+                        call_id, item_id = self._split_tool_call_id(str(tool_call.get("id") or ""))
                         converted.append({
                             "type": "function_call",
-                            "call_id": tool_call.get("id"),
+                            "call_id": call_id,
+                            "id": item_id,
                             "name": function.get("name"),
                             "arguments": function.get("arguments", "{}"),
                         })
@@ -376,6 +387,17 @@ class OpenAICodexProvider(LLMProvider):
         padding = "=" * (-len(payload) % 4)
         decoded = base64.urlsafe_b64decode(payload + padding)
         return json.loads(decoded.decode("utf-8"))
+
+    def _compose_tool_call_id(self, call_id: str, item_id: str) -> str:
+        if call_id and item_id:
+            return f"{call_id}|{item_id}"
+        return call_id or item_id
+
+    def _split_tool_call_id(self, composite_id: str) -> tuple[str, str | None]:
+        if "|" in composite_id:
+            call_id, item_id = composite_id.split("|", 1)
+            return call_id, item_id
+        return composite_id, None
 
 
 def create_provider(config: ProviderConfig, model_id: str) -> LLMProvider:
