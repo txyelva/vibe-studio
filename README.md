@@ -10,10 +10,19 @@
 
 - 🤖 **多模型支持**: OpenAI, Anthropic Claude, Google Gemini, Moonshot Kimi, DeepSeek, MiniMax, 智谱 AI 等
 - 💬 **线程级模型切换**: 每个对话可独立选择模型，默认跟随主模型
+- 🧵 **Thread 持续上下文**: 对话按线程保存，信息不断档，换设备回来也能接着写
 - 🔧 **内置工具**: 文件读写、代码搜索、命令执行、智能替换
 - 🔄 **AI 工具发现**: 自动检测 OpenClaw, Codex, Claude Code 等已安装的 AI CLI 工具
 - 📁 **项目管理**: 支持多项目、本地目录选择
 - 🔐 **JWT 认证**: 安全的登录机制，支持环境变量配置
+
+## 为什么适合 Vibe Coding
+
+和只适合“坐在当前这台电脑前”使用的 CLI 相比，Vibe Studio 更适合连续、跨设备的编程流：
+
+- 项目、线程、模型选择都保存在本地工作台里，不容易因为切换窗口或切换设备丢上下文
+- 线程模式更适合长期任务，可以围绕同一个项目持续推进，而不是每次重新解释背景
+- 配合 Cloudflare Tunnel 后，你在外面也能从手机、平板、另一台电脑继续同一个 coding thread
 
 ## 快速开始
 
@@ -109,6 +118,30 @@ tail -f /tmp/vibe-studio-launchd.log
 # 卸载常驻服务
 ./scripts/uninstall-launchd.sh
 ```
+
+## 远程访问：Cloudflare Tunnel
+
+如果你希望“走到哪里都能继续同一个 thread”，最简单的做法是给本地 `7788` 挂一个 Cloudflare Tunnel。
+
+### 临时公网地址（最快）
+
+```bash
+brew install cloudflared
+cloudflared tunnel --url http://127.0.0.1:7788
+```
+
+运行后，终端会给你一个 `https://*.trycloudflare.com` 地址。打开这个地址，就能从外网访问你本机上的 Vibe Studio。
+
+### 适合什么场景
+
+- 电脑在家里或办公室常开着
+- 你想在手机、iPad、另一台电脑上继续同一个项目
+- 你希望 thread 里的上下文不中断，而不是重新开一个新的 AI 会话
+
+### 安全提醒
+
+- 请先确保你已经设置好 Vibe Studio 登录密码/JWT 配置，再暴露到公网
+- `trycloudflare.com` 适合快速体验；如果要长期稳定使用，建议你后续再配置自己的 Cloudflare Tunnel 和域名
 
 ## 配置说明
 
