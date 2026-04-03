@@ -24,6 +24,20 @@
 - 线程模式更适合长期任务，可以围绕同一个项目持续推进，而不是每次重新解释背景
 - 配合 Cloudflare Tunnel 后，你在外面也能从手机、平板、另一台电脑继续同一个 coding thread
 
+## 界面预览
+
+### 项目工作台
+
+![Projects Demo](docs/screenshots/projects-cards-demo.png)
+
+### Thread 工作区
+
+![Thread Demo](docs/screenshots/thread-demo.png)
+
+### 多模型管理
+
+![Models Demo](docs/screenshots/models-demo.png)
+
 ## 快速开始
 
 当前稳定支持的平台：

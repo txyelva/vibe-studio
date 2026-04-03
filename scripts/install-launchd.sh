@@ -6,8 +6,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PYTHON_BIN="$APP_DIR/.venv/bin/python"
-PLIST_PATH="$HOME/Library/LaunchAgents/com.ttpg.vibe-studio.plist"
-LABEL="com.ttpg.vibe-studio"
+PLIST_PATH="$HOME/Library/LaunchAgents/com.vibestudio.app.plist"
+LABEL="com.vibestudio.app"
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "❌ launchd 安装脚本仅支持 macOS"

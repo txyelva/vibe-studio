@@ -3,8 +3,8 @@
 
 set -euo pipefail
 
-PLIST_PATH="$HOME/Library/LaunchAgents/com.ttpg.vibe-studio.plist"
-LABEL="com.ttpg.vibe-studio"
+PLIST_PATH="$HOME/Library/LaunchAgents/com.vibestudio.app.plist"
+LABEL="com.vibestudio.app"
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "❌ 该脚本仅支持 macOS"

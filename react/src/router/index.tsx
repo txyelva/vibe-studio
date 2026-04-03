@@ -21,7 +21,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const checkAuth = async () => {
       const token = getToken();
       if (!token) {
-        setChecking(false);
+        try {
+          const status = await authApi.getStatus();
+          if (!status.enabled) {
+            setAuthenticated("anonymous");
+          }
+        } catch {
+          // ignore and fall through to login
+        } finally {
+          setChecking(false);
+        }
         return;
       }
 
