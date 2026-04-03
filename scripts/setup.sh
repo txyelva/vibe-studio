@@ -1,10 +1,16 @@
 #!/bin/bash
-# Vibe Studio 快速设置脚本
+# Vibe Studio 兼容设置脚本。
+# macOS 下推荐改用 scripts/install-macos.sh。
 
 set -e
 
 echo "🎵 Vibe Studio 设置脚本"
 echo ""
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo "💡 macOS 推荐使用一键安装脚本：./scripts/install-macos.sh"
+    echo ""
+fi
 
 # 检查 Python
 if ! command -v python3 &> /dev/null; then

@@ -249,6 +249,7 @@ class OpenAICodexProvider(LLMProvider):
         url = f"{self.config.base_url.rstrip('/')}/codex/responses"
         accumulated_text = ""
         pending_tool_calls: dict[str, dict[str, Any]] = {}
+        item_to_call_id: dict[str, str] = {}
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             async with client.stream("POST", url, headers=headers, json=body) as response:
@@ -266,13 +267,16 @@ class OpenAICodexProvider(LLMProvider):
                         if item.get("type") == "function_call":
                             call_id = str(item.get("call_id") or "")
                             item_id = str(item.get("id") or "")
+                            if item_id and call_id:
+                                item_to_call_id[item_id] = call_id
                             pending_tool_calls[call_id] = {
                                 "id": self._compose_tool_call_id(call_id, item_id),
                                 "name": str(item.get("name") or ""),
                                 "args_json": str(item.get("arguments") or ""),
                             }
                     elif event_type == "response.function_call_arguments.delta":
-                        call_id = str(event.get("item_id") or event.get("call_id") or "")
+                        item_id = str(event.get("item_id") or "")
+                        call_id = item_to_call_id.get(item_id) or str(event.get("call_id") or "")
                         # Fallback: update the most recent pending tool call.
                         if not call_id and pending_tool_calls:
                             call_id = list(pending_tool_calls.keys())[-1]
@@ -280,7 +284,8 @@ class OpenAICodexProvider(LLMProvider):
                             pending = pending_tool_calls.setdefault(call_id, {"id": call_id, "name": "", "args_json": ""})
                             pending["args_json"] += str(event.get("delta") or "")
                     elif event_type == "response.function_call_arguments.done":
-                        call_id = str(event.get("call_id") or "")
+                        item_id = str(event.get("item_id") or "")
+                        call_id = item_to_call_id.get(item_id) or str(event.get("call_id") or "")
                         if not call_id and pending_tool_calls:
                             call_id = list(pending_tool_calls.keys())[-1]
                         if call_id:
@@ -293,6 +298,8 @@ class OpenAICodexProvider(LLMProvider):
                         if item.get("type") == "function_call":
                             call_id = str(item.get("call_id") or "")
                             item_id = str(item.get("id") or "")
+                            if item_id and call_id:
+                                item_to_call_id[item_id] = call_id
                             pending = pending_tool_calls.setdefault(
                                 call_id,
                                 {"id": self._compose_tool_call_id(call_id, item_id), "name": "", "args_json": ""},
@@ -302,6 +309,8 @@ class OpenAICodexProvider(LLMProvider):
                             pending["args_json"] = str(item.get("arguments") or pending["args_json"])
 
         for tc in pending_tool_calls.values():
+            if not tc.get("name"):
+                continue
             try:
                 args = json.loads(tc["args_json"] or "{}")
             except json.JSONDecodeError:
@@ -336,6 +345,14 @@ class OpenAICodexProvider(LLMProvider):
                     converted.append({
                         "role": "user",
                         "content": [{"type": "input_text", "text": str(content or "")}],
+                    })
+            elif role == "tool":
+                call_id, _ = self._split_tool_call_id(str(message.get("tool_call_id") or ""))
+                if call_id:
+                    converted.append({
+                        "type": "function_call_output",
+                        "call_id": call_id,
+                        "output": message.get("content", ""),
                     })
             elif role == "assistant":
                 tool_calls = message.get("tool_calls") or []

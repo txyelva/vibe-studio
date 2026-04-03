@@ -3,9 +3,12 @@ import { useLocation, useNavigate } from "react-router";
 import { useStore } from "../store";
 import { useMobile } from "../hooks/useMobile";
 
-const NAV_ITEMS = [
+const MAIN_NAV_ITEMS = [
   { path: "/projects", label: "Projects", icon: "/images/folder2.png" },
   { path: "/models", label: "Models", icon: "/images/terminal3.png" },
+];
+
+const FOOTER_NAV_ITEMS = [
   { path: "/settings", label: "Settings", icon: "/images/settings0.png" },
 ];
 
@@ -110,7 +113,7 @@ export function Sidebar() {
               gap: 8,
             }}
           >
-            {NAV_ITEMS.map((item) => {
+            {MAIN_NAV_ITEMS.map((item) => {
               const isActive = location.pathname === item.path;
               return (
                 <button
@@ -190,6 +193,43 @@ export function Sidebar() {
               />
               Thread
             </button>
+
+            {FOOTER_NAV_ITEMS.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => handleNavClick(item.path)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "12px 16px",
+                    backgroundColor: isActive ? "rgba(0,255,136,0.1)" : "transparent",
+                    border: "none",
+                    borderLeft: isActive ? "3px solid #00ff88" : "3px solid transparent",
+                    color: isActive ? "#00ff88" : "#8a8a8a",
+                    fontSize: 14,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    textAlign: "left",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 18,
+                      height: 18,
+                      backgroundImage: `url(${item.icon})`,
+                      backgroundSize: "contain",
+                      backgroundRepeat: "no-repeat",
+                      opacity: isActive ? 1 : 0.7,
+                    }}
+                  />
+                  {item.label}
+                </button>
+              );
+            })}
 
             {/* 用户信息 */}
             {username && (
@@ -277,7 +317,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <div style={{ padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
-        {NAV_ITEMS.map((item) => {
+        {MAIN_NAV_ITEMS.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <button
@@ -375,6 +415,43 @@ export function Sidebar() {
           gap: 8,
         }}
       >
+        {FOOTER_NAV_ITEMS.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 12px",
+                backgroundColor: isActive ? "rgba(0,255,136,0.08)" : "transparent",
+                border: "none",
+                borderLeft: isActive ? "2px solid #00ff88" : "2px solid transparent",
+                color: isActive ? "#00ff88" : "#8a8a8a",
+                fontSize: 12,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                textAlign: "left",
+              }}
+            >
+              <div
+                style={{
+                  width: 14,
+                  height: 14,
+                  backgroundImage: `url(${item.icon})`,
+                  backgroundSize: "contain",
+                  backgroundRepeat: "no-repeat",
+                  opacity: isActive ? 1 : 0.7,
+                }}
+              />
+              {item.label}
+            </button>
+          );
+        })}
+
         {username && (
           <div
             style={{
