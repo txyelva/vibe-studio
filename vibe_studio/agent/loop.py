@@ -98,6 +98,7 @@ async def run_agent(
     messages.append({"role": "user", "content": user_message})
     original_user_content = user_message
     toolless_retries = 0
+    has_executed_tool = False
 
     for turn in range(MAX_TURNS):
         tool_calls_this_turn: list[dict] = []
@@ -117,7 +118,7 @@ async def run_agent(
 
         # 没有工具调用 → 对话结束
         if not tool_calls_this_turn:
-            if request_requires_tool_use(user_message) and toolless_retries < MAX_TOOLLESS_RETRIES:
+            if request_requires_tool_use(user_message) and not has_executed_tool and toolless_retries < MAX_TOOLLESS_RETRIES:
                 toolless_retries += 1
                 yield {
                     "type": "thinking",
@@ -135,7 +136,6 @@ async def run_agent(
                 }
                 continue
 
-            messages[-1] = {"role": "user", "content": original_user_content}
             # 把 assistant 回复加入历史
             messages.append({"role": "assistant", "content": full_text})
             conversation_history[:] = messages
@@ -143,7 +143,6 @@ async def run_agent(
             break
 
         # 把 assistant 这一轮（含工具调用意图）加入历史
-        messages[-1] = {"role": "user", "content": original_user_content}
         if provider_cfg.api_type == "anthropic":
             # Anthropic 格式
             content_blocks: list[dict] = []
@@ -194,6 +193,7 @@ async def run_agent(
             else:
                 result = await executor.execute(tc["name"], tc["args"])
             yield {"type": "tool_end", "name": tc["name"], "result": result}
+            has_executed_tool = True
 
             # 文件变化事件（给前端高亮展示）
             if tc["name"] in ("write_file", "str_replace") and "error" not in result:
