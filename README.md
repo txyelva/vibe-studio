@@ -51,6 +51,41 @@ vibe-studio
 
 访问 http://localhost:7788
 
+### 方式三：macOS 常驻服务
+
+如果你希望在自己的机器上稳定常驻运行，而不是每次手动打开终端启动，可以用仓库自带的 `launchd` 安装脚本：
+
+```bash
+# 1. 安装依赖
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+cd react && npm install && npm run build && cd ..
+
+# 2. 安装并启动 launchd 服务
+./scripts/install-launchd.sh
+```
+
+安装后服务会：
+
+- 监听 `http://127.0.0.1:7788`
+- 登录后自动启动
+- 进程退出后自动拉起
+- 日志写入 `/tmp/vibe-studio-launchd.log`
+
+常用命令：
+
+```bash
+# 查看服务是否在监听
+lsof -i :7788
+
+# 查看 launchd 日志
+tail -f /tmp/vibe-studio-launchd.log
+
+# 卸载常驻服务
+./scripts/uninstall-launchd.sh
+```
+
 ## 配置说明
 
 ### 环境变量
@@ -156,6 +191,16 @@ npm run build
 ```
 
 默认会同步到当前仓库旁边的 `../vibe-studio`。如有需要，也可以手动传入 live 目录路径。
+
+## 分发建议
+
+如果你要让别人装你的项目，至少要保证下面几件事 README 里写清楚：
+
+1. 依赖安装顺序：Python 虚拟环境、`pip install -e .`、前端 `npm install && npm run build`
+2. 默认访问地址：`http://127.0.0.1:7788`
+3. 配置目录位置：`~/.vibe-studio`
+4. macOS 用户推荐使用 `./scripts/install-launchd.sh` 做常驻启动
+5. Provider 配置要填真实可用的模型 ID 或 endpoint ID，而不只是供应商名字
 
 ## 安全注意事项
 
