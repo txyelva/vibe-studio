@@ -80,7 +80,7 @@ function createSocket(
         }
         case "assistant_message": {
           if (!last || last.role !== "assistant") return {};
-          msgs[msgs.length - 1] = { ...last, content: event.text };
+          msgs[msgs.length - 1] = { ...last, content: event.text, unverifiedContent: event.text };
           return { messages: msgs };
         }
         case "tool_start":
@@ -127,11 +127,18 @@ function createSocket(
         case "done": {
           if (!last || last.role !== "assistant") return { isAgentRunning: false };
           let content = last.content;
+          let unverifiedContent = last.unverifiedContent;
           if (!content.trim()) {
             if (last.executedTools) content = "已完成本地操作，详细过程见上方工具执行记录。";
             else if ((last.thinking ?? "").trim()) content = "本次只生成了思考或计划，没有实际执行本地操作。";
           }
-          msgs[msgs.length - 1] = { ...last, content, isStreaming: false };
+          if (!last.executedTools) {
+            if (content.trim()) {
+              unverifiedContent = content;
+            }
+            content = "本次没有任何工具执行记录，不能视为已经完成本地操作。下方思考内容和未验证结论仅代表模型判断。";
+          }
+          msgs[msgs.length - 1] = { ...last, content, unverifiedContent, isStreaming: false };
           return { messages: msgs, isAgentRunning: false, pendingApproval: null };
         }
         case "error": {

@@ -72,6 +72,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   thinking?: string;
+  unverifiedContent?: string;
   events?: AgentEvent[];
   isStreaming?: boolean;
   executedTools?: boolean;

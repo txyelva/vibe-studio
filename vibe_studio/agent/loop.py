@@ -36,6 +36,22 @@ SYSTEM_PROMPT = """你是 Vibe Studio，一个专业的 AI 编程助手。
 """
 
 MAX_TURNS = 20  # 防止无限循环
+MAX_TOOLLESS_RETRIES = 1
+
+
+def request_requires_tool_use(message: str) -> bool:
+    text = message.strip().lower()
+    if not text or text.startswith("/"):
+        return False
+
+    keywords = [
+        "看", "看看", "检查", "分析", "排查", "调试", "修复", "修改", "重构", "优化",
+        "实现", "添加", "删除", "更新", "保存", "提交", "记录", "重启", "运行", "测试",
+        "构建", "部署", "读取", "搜索", "查一下", "看下", "改", "写一个", "做一个",
+        "fix", "debug", "check", "inspect", "analyze", "update", "modify", "edit",
+        "refactor", "restart", "run", "test", "build", "save", "record", "implement",
+    ]
+    return any(keyword in text for keyword in keywords)
 
 
 async def run_agent(
@@ -77,9 +93,11 @@ async def run_agent(
         permission_policy=ToolPermissionPolicy.from_config(config.tool_permissions),
     )
 
-    # 构建对话历史（直接修改传入的列表，方便调用者持久化）
-    messages = conversation_history
+    # 使用本地消息副本，避免内部重试提示污染持久化历史
+    messages = list(conversation_history)
     messages.append({"role": "user", "content": user_message})
+    original_user_content = user_message
+    toolless_retries = 0
 
     for turn in range(MAX_TURNS):
         tool_calls_this_turn: list[dict] = []
@@ -99,12 +117,33 @@ async def run_agent(
 
         # 没有工具调用 → 对话结束
         if not tool_calls_this_turn:
+            if request_requires_tool_use(user_message) and toolless_retries < MAX_TOOLLESS_RETRIES:
+                toolless_retries += 1
+                yield {
+                    "type": "thinking",
+                    "text": "\n[系统提醒：这类请求需要先调用工具获取真实证据，正在要求模型改为实际操作。]\n",
+                }
+                messages[-1] = {
+                    "role": "user",
+                    "content": (
+                        f"{original_user_content}\n\n"
+                        "系统执行要求：这是一个需要本地操作或项目证据的请求。"
+                        "你必须先调用至少一个工具（如 list_files/read_file/search_files/bash_exec/"
+                        "write_file/str_replace）再给结论。"
+                        "没有工具证据时，不要声称已经检查、修改、重启、测试或保存。"
+                    ),
+                }
+                continue
+
+            messages[-1] = {"role": "user", "content": original_user_content}
             # 把 assistant 回复加入历史
             messages.append({"role": "assistant", "content": full_text})
+            conversation_history[:] = messages
             yield {"type": "assistant_message", "text": full_text}
             break
 
         # 把 assistant 这一轮（含工具调用意图）加入历史
+        messages[-1] = {"role": "user", "content": original_user_content}
         if provider_cfg.api_type == "anthropic":
             # Anthropic 格式
             content_blocks: list[dict] = []
@@ -189,4 +228,5 @@ async def run_agent(
     else:
         yield {"type": "error", "text": f"超过最大轮次限制（{MAX_TURNS}），任务终止"}
 
+    conversation_history[:] = messages
     yield {"type": "done"}

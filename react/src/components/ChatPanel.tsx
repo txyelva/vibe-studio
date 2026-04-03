@@ -123,6 +123,48 @@ function ThinkingPanel({ thinking, executedTools }: { thinking: string; executed
   );
 }
 
+function UnverifiedResultPanel({ content }: { content: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
+      <button
+        onClick={() => setExpanded((value) => !value)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          alignSelf: "flex-start",
+          padding: "6px 10px",
+          backgroundColor: "rgba(255,68,68,0.08)",
+          border: "1px solid rgba(255,68,68,0.2)",
+          color: "#ff8888",
+          fontSize: 11,
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        <span>{expanded ? "▼" : "▶"}</span>
+        <span>未验证结论（无工具执行证据）</span>
+      </button>
+      {expanded && (
+        <div
+          style={{
+            padding: "12px 14px",
+            backgroundColor: "rgba(255,68,68,0.04)",
+            border: "1px solid rgba(255,68,68,0.15)",
+            fontSize: 12,
+            color: "#f0c4c4",
+            lineHeight: "1.7",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {content}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CodeBlock({ language, code }: { language: string; code: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -353,6 +395,8 @@ function MessageItem({ msg }: { msg: ChatMessage }) {
           {msg.events?.filter((e) => e.type === "tool_start" || e.type === "tool_end" || e.type === "file_changed").map((e, i) => <ToolCallItem key={i} event={e} />)}
 
           {msg.thinking?.trim() && <ThinkingPanel thinking={msg.thinking} executedTools={msg.executedTools} />}
+
+          {!msg.executedTools && msg.unverifiedContent?.trim() && <UnverifiedResultPanel content={msg.unverifiedContent} />}
 
           {msg.content.trim() && (
             <div style={{ fontSize: 13, color: "#fff", lineHeight: "1.6" }}>
