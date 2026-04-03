@@ -54,6 +54,55 @@ def request_requires_tool_use(message: str) -> bool:
     return any(keyword in text for keyword in keywords)
 
 
+def sanitize_anthropic_history(messages: list[dict]) -> list[dict]:
+    """Drop incomplete Anthropic tool_use turns that would trigger 2013 errors."""
+    sanitized: list[dict] = []
+    pending_tool_use_ids: set[str] = set()
+
+    for message in messages:
+        role = message.get("role")
+        content = message.get("content")
+
+        if pending_tool_use_ids:
+            if role == "user" and isinstance(content, list):
+                result_ids = {
+                    block.get("tool_use_id")
+                    for block in content
+                    if isinstance(block, dict) and block.get("type") == "tool_result"
+                }
+                if result_ids and result_ids.issubset(pending_tool_use_ids):
+                    sanitized.append(message)
+                    pending_tool_use_ids = set()
+                    continue
+
+            pending_tool_use_ids = set()
+            continue
+
+        sanitized.append(message)
+
+        if role == "assistant" and isinstance(content, list):
+            tool_use_ids = {
+                block.get("id")
+                for block in content
+                if isinstance(block, dict) and block.get("type") == "tool_use" and block.get("id")
+            }
+            if tool_use_ids:
+                pending_tool_use_ids = tool_use_ids
+
+    if pending_tool_use_ids and sanitized:
+        last = sanitized[-1]
+        if last.get("role") == "assistant" and isinstance(last.get("content"), list):
+            tool_use_ids = {
+                block.get("id")
+                for block in last["content"]
+                if isinstance(block, dict) and block.get("type") == "tool_use" and block.get("id")
+            }
+            if tool_use_ids:
+                sanitized.pop()
+
+    return sanitized
+
+
 async def run_agent(
     user_message: str,
     workspace: str,
@@ -95,6 +144,11 @@ async def run_agent(
 
     # 使用本地消息副本，避免内部重试提示污染持久化历史
     messages = list(conversation_history)
+    if provider_cfg.api_type == "anthropic":
+        sanitized_history = sanitize_anthropic_history(messages)
+        if len(sanitized_history) != len(messages):
+            conversation_history[:] = sanitized_history
+            messages = list(sanitized_history)
     messages.append({"role": "user", "content": user_message})
     original_user_content = user_message
     toolless_retries = 0
