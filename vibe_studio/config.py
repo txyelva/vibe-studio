@@ -63,7 +63,7 @@ BUILTIN_PROVIDERS: dict[str, dict] = {
         "api_type": "anthropic",
         "env_key": "MOONSHOT_API_KEY",
         "models": [
-            {"id": "kimi-code", "name": "Kimi Code（推荐）"},
+            {"id": "k2p5", "name": "Kimi for Coding（推荐）"},
         ],
     },
     "qwen": {

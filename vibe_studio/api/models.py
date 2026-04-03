@@ -67,7 +67,7 @@ PROVIDER_PRESETS = {
         "base_url": "https://api.kimi.com/coding/",
         "auth_types": ["api_key"],
         "models": [
-            {"id": "kimi-code", "name": "Kimi Code"},
+            {"id": "k2p5", "name": "Kimi for Coding"},
         ],
         "docs_url": "https://platform.moonshot.cn/console/api-keys",
     },
@@ -475,7 +475,7 @@ async def get_model_usage(model_ref: str = Query(...)) -> dict:
     
     # 模拟用量数据
     mock_usage_data = {
-        "kimi_coding/kimi-code": {
+        "kimi_coding/k2p5": {
             "total_requests": 1523,
             "total_tokens": 2847563,
             "input_tokens": 1245321,
