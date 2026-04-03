@@ -17,6 +17,7 @@ echo "🔄 同步代码到 live: $LIVE_DIR"
 
 rsync -a "$PUBLIC_DIR/pyproject.toml" "$LIVE_DIR/pyproject.toml"
 rsync -a "$PUBLIC_DIR/start.sh" "$LIVE_DIR/start.sh"
+rsync -a --delete "$PUBLIC_DIR/scripts/" "$LIVE_DIR/scripts/"
 rsync -a --delete "$PUBLIC_DIR/vibe_studio/" "$LIVE_DIR/vibe_studio/"
 rsync -a "$PUBLIC_DIR/react/package.json" "$LIVE_DIR/react/package.json"
 rsync -a "$PUBLIC_DIR/react/index.html" "$LIVE_DIR/react/index.html"

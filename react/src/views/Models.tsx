@@ -47,6 +47,9 @@ export default function Models() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{success: boolean; message?: string; error?: string} | null>(null);
+  const [oauthSessionId, setOauthSessionId] = useState("");
+  const [oauthStatus, setOauthStatus] = useState<{ connected: boolean; expires_at?: number; account_id?: string; login?: { status: string; error?: string; account_email?: string; account_plan?: string } } | null>(null);
+  const [oauthBusy, setOauthBusy] = useState(false);
 
   // 加载 Providers 和 Presets
   useEffect(() => {
@@ -194,6 +197,7 @@ export default function Models() {
         api_key: editForm.apiKey || undefined,
         base_url: editForm.baseUrl || undefined,
         models: parsedModels,
+        auth_type: selectedProvider.auth_type,
       });
       
       const data = await modelsApi.getProviders();
@@ -218,8 +222,91 @@ export default function Models() {
       modelsText: selectedProvider.models.map((model) => `${model.id}${model.name !== model.id ? ` | ${model.name}` : ""}`).join("\n"),
     });
     setTestResult(null);
+    setOauthSessionId("");
+    setOauthStatus(null);
     setShowEditModal(true);
   };
+
+  const activeModels = addStep !== "select" && selectedPreset
+    ? (authType === "oauth" && selectedPreset.oauth_models?.length ? selectedPreset.oauth_models : selectedPreset.models)
+    : [];
+
+  const loadOAuthStatus = async (providerId: string, sessionId?: string) => {
+    try {
+      const status = await modelsApi.getProviderOAuthStatus(providerId, sessionId);
+      setOauthStatus(status);
+      return status;
+    } catch (e) {
+      console.error("Failed to load OAuth status", e);
+      return null;
+    }
+  };
+
+  const handleStartOAuth = async () => {
+    if (!selectedProvider) return;
+    setOauthBusy(true);
+    try {
+      const result = await modelsApi.startProviderOAuth(selectedProvider.id);
+      setOauthSessionId(result.session_id);
+      setOauthStatus({
+        connected: false,
+        login: { status: "pending" },
+      });
+      window.open(result.auth_url, "_blank", "noopener,noreferrer");
+    } catch (e: any) {
+      alert(e.message || "Failed to start OAuth login");
+    } finally {
+      setOauthBusy(false);
+    }
+  };
+
+  const handleDisconnectOAuth = async () => {
+    if (!selectedProvider) return;
+    setOauthBusy(true);
+    try {
+      await modelsApi.disconnectProviderOAuth(selectedProvider.id);
+      const data = await modelsApi.getProviders();
+      setProviders(data.providers);
+      const updated = data.providers.find(p => p.id === selectedProvider.id);
+      if (updated) setSelectedProvider(updated);
+      setOauthStatus({ connected: false });
+      setOauthSessionId("");
+    } catch (e: any) {
+      alert(e.message || "Failed to disconnect OAuth");
+    } finally {
+      setOauthBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showEditModal || !selectedProvider || selectedProvider.auth_type !== "oauth") return;
+
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const poll = async () => {
+      const status = await loadOAuthStatus(selectedProvider.id, oauthSessionId || undefined);
+      if (stopped || !status) return;
+      const loginStatus = status.login?.status;
+      if (oauthSessionId && loginStatus === "pending") {
+        timer = setTimeout(poll, 1500);
+        return;
+      }
+      if (oauthSessionId && (loginStatus === "completed" || loginStatus === "error")) {
+        const data = await modelsApi.getProviders();
+        if (stopped) return;
+        setProviders(data.providers);
+        const updated = data.providers.find(p => p.id === selectedProvider.id);
+        if (updated) setSelectedProvider(updated);
+      }
+    };
+
+    poll();
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [showEditModal, selectedProvider?.id, selectedProvider?.auth_type, oauthSessionId]);
 
   if (loading) {
     return (
@@ -805,7 +892,18 @@ export default function Models() {
                         {selectedPreset.auth_types.map((type) => (
                           <button
                             key={type}
-                            onClick={() => setAuthType(type)}
+                            onClick={() => {
+                              setAuthType(type);
+                              setNewProviderForm((prev) => ({
+                                ...prev,
+                                baseUrl: type === "oauth"
+                                  ? (selectedPreset.oauth_base_url || prev.baseUrl)
+                                  : selectedPreset.base_url,
+                                selectedModels: (type === "oauth"
+                                  ? (selectedPreset.oauth_models?.length ? selectedPreset.oauth_models : selectedPreset.models)
+                                  : selectedPreset.models).map((model) => model.id),
+                              }));
+                            }}
                             style={{
                               flex: 1,
                               padding: "10px",
@@ -847,10 +945,13 @@ export default function Models() {
                       />
                     </div>
                   ) : (
-                    <div style={{ padding: 20, backgroundColor: "#0c0c0c", border: "1px solid #2f2f2f", textAlign: "center" }}>
+                    <div style={{ padding: 20, backgroundColor: "#0c0c0c", border: "1px solid #2f2f2f", textAlign: "left" }}>
                       <div style={{ fontSize: 14, color: "#fff", marginBottom: 8 }}>OAuth Authentication</div>
-                      <div style={{ fontSize: 12, color: "#6a6a6a" }}>
-                        Coming soon. Please use API Key for now.
+                      <div style={{ fontSize: 12, color: "#8a8a8a", lineHeight: 1.7 }}>
+                        这一版会先创建 Provider，再在编辑面板里拉起 OpenAI 登录。
+                        {selectedPreset.id === "openai" && (
+                          <span> 创建后会切到 ChatGPT OAuth / Codex 模式，默认使用 GPT-5.4 系列模型。</span>
+                        )}
                       </div>
                     </div>
                   )}
@@ -908,7 +1009,7 @@ export default function Models() {
                       Select Models
                     </label>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {selectedPreset.models.map((model) => (
+                      {activeModels.map((model) => (
                         <label
                           key={model.id}
                           style={{
@@ -1107,7 +1208,7 @@ export default function Models() {
 
                 <div>
                   <label style={{ display: "block", fontSize: 12, color: "#6a6a6a", marginBottom: 8 }}>
-                    API Key (leave empty to keep current)
+                    {selectedProvider.auth_type === "oauth" ? "API Key（OAuth 模式下可留空）" : "API Key (leave empty to keep current)"}
                   </label>
                   <input
                     type="password"
@@ -1147,6 +1248,74 @@ export default function Models() {
                     }}
                   />
                 </div>
+
+                {selectedProvider.auth_type === "oauth" && (
+                  <div style={{ padding: "16px", backgroundColor: "#0c0c0c", border: "1px solid #2f2f2f" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 13, color: "#fff", marginBottom: 4 }}>OpenAI OAuth</div>
+                        <div style={{ fontSize: 12, color: "#6a6a6a" }}>
+                          使用 ChatGPT Plus / Pro 登录，授权后线程将走 Codex Responses。
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          onClick={handleStartOAuth}
+                          disabled={oauthBusy}
+                          style={{
+                            padding: "8px 12px",
+                            backgroundColor: "#00ff88",
+                            border: "none",
+                            color: "#0c0c0c",
+                            fontSize: 12,
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                          }}
+                        >
+                          {oauthBusy ? "Opening..." : (oauthStatus?.connected ? "Re-login" : "Login with OpenAI")}
+                        </button>
+                        {oauthStatus?.connected && (
+                          <button
+                            onClick={handleDisconnectOAuth}
+                            disabled={oauthBusy}
+                            style={{
+                              padding: "8px 12px",
+                              backgroundColor: "transparent",
+                              border: "1px solid #2f2f2f",
+                              color: "#ff7777",
+                              fontSize: 12,
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                            }}
+                          >
+                            Disconnect
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: oauthStatus?.connected ? "#00ff88" : "#8a8a8a", lineHeight: 1.8 }}>
+                      状态：{oauthStatus?.connected ? "已连接" : "未连接"}
+                      {oauthStatus?.account_id ? ` · Account ${oauthStatus.account_id.slice(0, 10)}...` : ""}
+                      {oauthStatus?.expires_at ? ` · 到期 ${new Date(oauthStatus.expires_at).toLocaleString()}` : ""}
+                    </div>
+                    {oauthStatus?.login?.status === "pending" && (
+                      <div style={{ marginTop: 8, fontSize: 12, color: "#00ff88" }}>
+                        浏览器登录窗口已打开，正在等待回调...
+                      </div>
+                    )}
+                    {oauthStatus?.login?.status === "completed" && (
+                      <div style={{ marginTop: 8, fontSize: 12, color: "#00ff88" }}>
+                        OAuth 登录成功{oauthStatus.login.account_email ? `：${oauthStatus.login.account_email}` : ""}{oauthStatus.login.account_plan ? ` · ${oauthStatus.login.account_plan}` : ""}
+                      </div>
+                    )}
+                    {oauthStatus?.login?.status === "error" && (
+                      <div style={{ marginTop: 8, fontSize: 12, color: "#ff4444" }}>
+                        OAuth 登录失败：{oauthStatus.login.error || "Unknown error"}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label style={{ display: "block", fontSize: 12, color: "#6a6a6a", marginBottom: 8 }}>

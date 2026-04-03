@@ -132,7 +132,7 @@ async def run_agent(
         return
 
     api_key = provider_cfg.resolve_api_key()
-    if not api_key and provider_id != "ollama":
+    if provider_cfg.auth_type != "oauth" and not api_key and provider_id != "ollama":
         yield {"type": "error", "text": f"Provider '{provider_id}' 的 API Key 未设置"}
         return
 

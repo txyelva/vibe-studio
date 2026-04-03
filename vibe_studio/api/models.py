@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Optional
+from typing import Any, Optional
 
+import httpx
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from ..config import load_config, save_config, Config, BUILTIN_PROVIDERS
+from ..oauth_openai import openai_codex_oauth_manager
 
 router = APIRouter(prefix="/models", tags=["models"])
 
@@ -23,6 +25,13 @@ PROVIDER_PRESETS = {
             {"id": "gpt-4o-mini", "name": "GPT-4o Mini"},
             {"id": "o3-mini", "name": "o3-mini"},
             {"id": "o1", "name": "o1"},
+        ],
+        "oauth_api_type": "openai_codex",
+        "oauth_base_url": "https://chatgpt.com/backend-api",
+        "oauth_models": [
+            {"id": "gpt-5.4", "name": "GPT-5.4"},
+            {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex"},
+            {"id": "gpt-5.2", "name": "GPT-5.2"},
         ],
         "docs_url": "https://platform.openai.com/api-keys",
     },
@@ -165,13 +174,16 @@ class ProviderPreset(BaseModel):
     base_url: str
     auth_types: list[str]
     models: list[dict]
+    oauth_api_type: Optional[str] = None
+    oauth_base_url: Optional[str] = None
+    oauth_models: list[dict] = Field(default_factory=list)
     docs_url: str
 
 
 class CreateModelRequest(BaseModel):
     provider_id: str
     name: Optional[str] = None  # 自定义名称，默认使用预设
-    api_key: str
+    api_key: str = ""
     auth_type: str = "api_key"  # "api_key" 或 "oauth"
     base_url: Optional[str] = None  # 自定义 base_url
     selected_models: list[str] = Field(default_factory=list)  # 选择的模型ID列表
@@ -182,6 +194,7 @@ class UpdateModelRequest(BaseModel):
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     models: Optional[list[dict]] = None
+    auth_type: Optional[str] = None
 
 
 class ModelUsage(BaseModel):
@@ -258,24 +271,26 @@ async def create_model(req: CreateModelRequest) -> dict:
         counter += 1
     
     # 构建模型列表
+    preset_models = preset.get("oauth_models", []) if req.auth_type == "oauth" else preset["models"]
     selected_models = []
     for model_id in req.selected_models:
-        model_info = next((m for m in preset["models"] if m["id"] == model_id), None)
+        model_info = next((m for m in preset_models if m["id"] == model_id), None)
         if model_info:
             selected_models.append(model_info)
-    
+
     if not selected_models:
         # 默认选择第一个模型
-        selected_models = preset["models"][:1]
-    
+        selected_models = preset_models[:1]
+
     # 构建 provider 配置
     provider_config = {
         "name": req.name or preset["name"],
-        "api_type": preset["api_type"],
-        "base_url": req.base_url or preset["base_url"],
+        "api_type": preset.get("oauth_api_type", preset["api_type"]) if req.auth_type == "oauth" else preset["api_type"],
+        "base_url": req.base_url or (preset.get("oauth_base_url", preset["base_url"]) if req.auth_type == "oauth" else preset["base_url"]),
         "api_key": req.api_key,
         "auth_type": req.auth_type,
         "models": selected_models,
+        "oauth": {},
     }
     
     cfg.providers[provider_config_id] = provider_config
@@ -326,7 +341,9 @@ async def update_model_provider(provider_id: str, req: UpdateModelRequest) -> di
         provider["base_url"] = req.base_url
     if req.models is not None:
         provider["models"] = req.models
-    
+    if req.auth_type is not None:
+        provider["auth_type"] = req.auth_type
+
     save_config(cfg)
     
     return {"success": True, "provider": provider}
@@ -356,6 +373,57 @@ async def delete_model_provider(provider_id: str) -> dict:
     return {"success": True}
 
 
+@router.post("/{provider_id}/oauth/start")
+async def start_provider_oauth(provider_id: str) -> dict:
+    cfg = load_config()
+    provider = cfg.providers.get(provider_id)
+    if not provider:
+        raise HTTPException(404, f"Provider not found: {provider_id}")
+    if not provider_id.startswith("openai"):
+        raise HTTPException(400, "目前只支持 OpenAI ChatGPT OAuth 登录")
+
+    provider["auth_type"] = "oauth"
+    provider["api_type"] = "openai_codex"
+    provider["base_url"] = provider.get("base_url") or "https://chatgpt.com/backend-api"
+    if not provider.get("models"):
+        provider["models"] = PROVIDER_PRESETS["openai"]["oauth_models"]
+    save_config(cfg)
+
+    login = openai_codex_oauth_manager.start_login(provider_id)
+    return {"success": True, **login}
+
+
+@router.get("/{provider_id}/oauth/status")
+async def get_provider_oauth_status(provider_id: str, session_id: Optional[str] = Query(default=None)) -> dict:
+    cfg = load_config()
+    provider = cfg.providers.get(provider_id)
+    if not provider:
+        raise HTTPException(404, f"Provider not found: {provider_id}")
+
+    oauth = provider.get("oauth") or {}
+    connected = bool(oauth.get("access_token"))
+    status: dict[str, Any] = {
+        "connected": connected,
+        "auth_type": provider.get("auth_type", "api_key"),
+        "expires_at": oauth.get("expires_at"),
+        "account_id": oauth.get("account_id"),
+    }
+    if session_id:
+        status["login"] = openai_codex_oauth_manager.get_status(session_id)
+    return status
+
+
+@router.post("/{provider_id}/oauth/disconnect")
+async def disconnect_provider_oauth(provider_id: str) -> dict:
+    cfg = load_config()
+    provider = cfg.providers.get(provider_id)
+    if not provider:
+        raise HTTPException(404, f"Provider not found: {provider_id}")
+    provider["oauth"] = {}
+    save_config(cfg)
+    return {"success": True}
+
+
 @router.post("/{provider_id}/test")
 async def test_model_provider(provider_id: str) -> dict:
     """测试 Provider 连接"""
@@ -367,9 +435,13 @@ async def test_model_provider(provider_id: str) -> dict:
     api_key = provider.get("api_key", "")
     base_url = provider.get("base_url", "")
     api_type = provider.get("api_type", "openai")
+    auth_type = provider.get("auth_type", "api_key")
     models = provider.get("models", [])
-    
+
     try:
+        if auth_type == "oauth":
+            api_key = openai_codex_oauth_manager.ensure_fresh_access_token(provider_id)
+
         if api_type == "anthropic":
             from anthropic import Anthropic
             client = Anthropic(api_key=api_key, base_url=base_url if base_url else None)
@@ -393,6 +465,36 @@ async def test_model_provider(provider_id: str) -> dict:
                         return {"success": False, "error": f"API Error: {error_msg}"}
             else:
                 return {"success": True, "message": "Anthropic API key format valid"}
+        elif api_type == "openai_codex":
+            if not models:
+                return {"success": False, "error": "No model configured for OpenAI OAuth provider"}
+            account_id = provider.get("oauth", {}).get("account_id")
+            if not account_id:
+                return {"success": False, "error": "OpenAI OAuth 已登录，但缺少 account_id，请重新登录"}
+            model_id = models[0]["id"]
+            url = f"{base_url.rstrip('/')}/codex/responses"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "chatgpt-account-id": str(account_id),
+                "originator": "pi",
+                "OpenAI-Beta": "responses=experimental",
+                "accept": "text/event-stream",
+                "content-type": "application/json",
+                "User-Agent": "Vibe Studio OAuth",
+            }
+            body = {
+                "model": model_id,
+                "store": False,
+                "stream": True,
+                "instructions": "Reply with OK.",
+                "input": [{"role": "user", "content": [{"type": "input_text", "text": "Hi"}]}],
+                "text": {"verbosity": "low"},
+            }
+            with httpx.Client(timeout=20.0) as client:
+                response = client.post(url, headers=headers, json=body)
+            if response.status_code >= 400:
+                return {"success": False, "error": f"OAuth test failed: {response.text}"}
+            return {"success": True, "message": f"OpenAI OAuth connected, model '{model_id}' accepted the request"}
         else:
             from openai import OpenAI
             client = OpenAI(api_key=api_key, base_url=base_url)

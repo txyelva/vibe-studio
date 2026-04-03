@@ -15,6 +15,9 @@ export interface ProviderPreset {
   base_url: string;
   auth_types: string[];
   models: { id: string; name: string }[];
+  oauth_api_type?: string;
+  oauth_base_url?: string;
+  oauth_models?: { id: string; name: string }[];
   docs_url: string;
 }
 
@@ -26,15 +29,34 @@ export interface ProviderConfig {
   auth_type: string;
   models: { id: string; name: string }[];
   is_primary: boolean;
+  oauth?: {
+    access_token?: string;
+    refresh_token?: string;
+    expires_at?: number;
+    account_id?: string;
+  };
 }
 
 export interface CreateModelRequest {
   provider_id: string;
   name?: string;
-  api_key: string;
+  api_key?: string;
   auth_type: string;
   base_url?: string;
   selected_models: string[];
+}
+
+export interface OAuthStatus {
+  connected: boolean;
+  auth_type: string;
+  expires_at?: number;
+  account_id?: string;
+  login?: {
+    status: string;
+    error?: string;
+    account_email?: string;
+    account_plan?: string;
+  };
 }
 
 export interface ModelUsage {
@@ -133,6 +155,15 @@ export const modelsApi = {
   // 测试 Provider 连接
   testProvider: (providerId: string) =>
     post<{ success: boolean; message?: string; error?: string }>(`/models/${providerId}/test`),
+
+  startProviderOAuth: (providerId: string) =>
+    post<{ success: boolean; session_id: string; auth_url: string }>(`/models/${providerId}/oauth/start`),
+
+  getProviderOAuthStatus: (providerId: string, sessionId?: string) =>
+    get<OAuthStatus>(`/models/${providerId}/oauth/status${sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : ""}`),
+
+  disconnectProviderOAuth: (providerId: string) =>
+    post<{ success: boolean }>(`/models/${providerId}/oauth/disconnect`),
   
   // 获取模型用量信息
   getModelUsage: (modelRef: string) => 

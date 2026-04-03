@@ -101,12 +101,20 @@ BUILTIN_PROVIDERS: dict[str, dict] = {
 class ProviderConfig:
     name: str
     base_url: str
-    api_type: str  # "openai" | "anthropic"
+    api_type: str  # "openai" | "anthropic" | "openai_codex"
+    auth_type: str = "api_key"
     api_key: str = ""  # 支持 ${ENV_VAR} 语法
     models: list[dict] = field(default_factory=list)
+    oauth: dict = field(default_factory=dict)
+    provider_id: str = ""
 
     def resolve_api_key(self) -> str:
         """解析环境变量引用，如 ${ANTHROPIC_API_KEY}"""
+        if self.auth_type == "oauth":
+            token = self.oauth.get("access_token", "")
+            if isinstance(token, str):
+                return token
+            return ""
         key = self.api_key
         if not key:
             return ""
@@ -141,6 +149,7 @@ class Config:
         # 只取 ProviderConfig 认识的字段，过滤掉多余的字段如 auth_type
         valid_fields = {f for f in ProviderConfig.__dataclass_fields__}  # type: ignore[attr-defined]
         filtered = {k: v for k, v in data.items() if k in valid_fields}
+        filtered.setdefault("provider_id", provider_id)
         return ProviderConfig(**filtered)
 
     def resolve_model(self, model_ref: str) -> tuple[str, str, Optional[ProviderConfig]]:

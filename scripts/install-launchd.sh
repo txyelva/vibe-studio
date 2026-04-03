@@ -57,9 +57,8 @@ cat > "$PLIST_PATH" <<EOF
 </plist>
 EOF
 
-launchctl bootout "gui/$(id -u)" "$PLIST_PATH" >/dev/null 2>&1 || true
-launchctl bootstrap "gui/$(id -u)" "$PLIST_PATH"
-launchctl kickstart -k "gui/$(id -u)/$LABEL"
+launchctl unload "$PLIST_PATH" >/dev/null 2>&1 || true
+launchctl load -w "$PLIST_PATH"
 sleep 3
 
 if lsof -i :7788 | grep LISTEN >/dev/null 2>&1; then

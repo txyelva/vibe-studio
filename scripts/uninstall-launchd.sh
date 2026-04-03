@@ -11,7 +11,7 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 1
 fi
 
-launchctl bootout "gui/$(id -u)" "$PLIST_PATH" >/dev/null 2>&1 || true
+launchctl unload "$PLIST_PATH" >/dev/null 2>&1 || true
 rm -f "$PLIST_PATH"
 
 echo "✅ 已卸载 $LABEL"
