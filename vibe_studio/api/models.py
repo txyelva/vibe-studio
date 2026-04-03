@@ -396,36 +396,36 @@ async def test_model_provider(provider_id: str) -> dict:
         else:
             from openai import OpenAI
             client = OpenAI(api_key=api_key, base_url=base_url)
-            
-            # 尝试列出模型，如果失败则尝试用第一个模型发起一个最小请求
+
+            # 对 OpenAI-compatible Provider，优先验证当前实际配置的模型，
+            # 避免 models.list() 成功但真正聊天时报模型不存在。
+            if models:
+                test_model_id = models[0]["id"]
+                try:
+                    client.chat.completions.create(
+                        model=test_model_id,
+                        messages=[{"role": "user", "content": "Hi"}],
+                        max_tokens=1,
+                        stream=False,
+                    )
+                    return {"success": True, "message": f"Connection OK, model '{test_model_id}' responded"}
+                except Exception as chat_error:
+                    error_msg = str(chat_error)
+                    if "401" in error_msg or "authentication" in error_msg.lower():
+                        return {"success": False, "error": "Authentication failed: Invalid API key"}
+                    if "404" in error_msg or "not exist" in error_msg.lower() or "not found" in error_msg.lower():
+                        extra = ""
+                        if provider_id == "volcengine":
+                            extra = "。火山引擎这里需要填写你自己在方舟控制台创建的推理接入点 ID，而不是通用模型名（如 doubao-pro）"
+                        return {"success": False, "error": f"Model not found: {test_model_id}{extra}"}
+                    return {"success": False, "error": f"API Error: {error_msg}"}
+
             try:
                 models_list = client.models.list()
                 model_count = len(list(models_list))
                 return {"success": True, "message": f"Connection OK, {model_count} models available"}
             except Exception as list_error:
-                # 某些 Provider（如 MiniMax）不支持 models.list()
-                # 尝试用第一个模型发起一个 chat completion 请求
-                if models:
-                    test_model_id = models[0]["id"]
-                    try:
-                        response = client.chat.completions.create(
-                            model=test_model_id,
-                            messages=[{"role": "user", "content": "Hi"}],
-                            max_tokens=1,
-                            stream=False,
-                        )
-                        return {"success": True, "message": f"Connection OK, model '{test_model_id}' responded"}
-                    except Exception as chat_error:
-                        error_msg = str(chat_error)
-                        # 如果是认证错误，显示更友好的信息
-                        if "401" in error_msg or "authentication" in error_msg.lower():
-                            return {"success": False, "error": "Authentication failed: Invalid API key"}
-                        elif "404" in error_msg:
-                            return {"success": False, "error": f"Model not found: {test_model_id}"}
-                        else:
-                            return {"success": False, "error": f"API Error: {error_msg}"}
-                else:
-                    return {"success": False, "error": f"Cannot list models: {str(list_error)}"}
+                return {"success": False, "error": f"Cannot verify provider: {str(list_error)}"}
     except Exception as e:
         error_msg = str(e)
         # 处理常见错误

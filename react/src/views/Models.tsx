@@ -42,6 +42,7 @@ export default function Models() {
     name: "",
     apiKey: "",
     baseUrl: "",
+    modelsText: "",
   });
   const [isUpdating, setIsUpdating] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -174,6 +175,17 @@ export default function Models() {
 
   const handleUpdateProvider = async () => {
     if (!selectedProvider) return;
+
+    const parsedModels = editForm.modelsText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [idPart, ...nameParts] = line.split("|");
+        const id = idPart.trim();
+        const name = (nameParts.join("|").trim() || id);
+        return { id, name };
+      });
     
     setIsUpdating(true);
     try {
@@ -181,6 +193,7 @@ export default function Models() {
         name: editForm.name,
         api_key: editForm.apiKey || undefined,
         base_url: editForm.baseUrl || undefined,
+        models: parsedModels,
       });
       
       const data = await modelsApi.getProviders();
@@ -202,6 +215,7 @@ export default function Models() {
       name: selectedProvider.name,
       apiKey: "",
       baseUrl: selectedProvider.base_url,
+      modelsText: selectedProvider.models.map((model) => `${model.id}${model.name !== model.id ? ` | ${model.name}` : ""}`).join("\n"),
     });
     setTestResult(null);
     setShowEditModal(true);
@@ -1132,6 +1146,36 @@ export default function Models() {
                       boxSizing: "border-box",
                     }}
                   />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 12, color: "#6a6a6a", marginBottom: 8 }}>
+                    Models / Endpoint IDs
+                  </label>
+                  <textarea
+                    value={editForm.modelsText}
+                    onChange={(e) => setEditForm({ ...editForm, modelsText: e.target.value })}
+                    rows={6}
+                    placeholder={"每行一个模型\n示例：\ndoubao-pro-32k | Doubao Pro\nep-202604032105-abcde | 我的豆包接入点"}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      backgroundColor: "#0c0c0c",
+                      border: "1px solid #2f2f2f",
+                      color: "#fff",
+                      fontSize: 14,
+                      fontFamily: "inherit",
+                      boxSizing: "border-box",
+                      resize: "vertical",
+                      minHeight: 120,
+                    }}
+                  />
+                  <div style={{ fontSize: 11, color: "#6a6a6a", marginTop: 8, lineHeight: "1.6" }}>
+                    每行格式：`模型ID` 或 `模型ID | 显示名称`。
+                    {selectedProvider.id === "volcengine" && (
+                      <span> 火山引擎这里通常要填你在方舟控制台创建的推理接入点 ID，而不是通用模型名。</span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Test Connection */}
