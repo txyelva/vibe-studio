@@ -360,7 +360,21 @@ export const useStore = create<AppState>((set, get) => ({
     set(() => ({ loadingConversations: true }));
     try {
       const { conversations } = await api.getConversations(projectId);
-      set(() => ({ conversations, loadingConversations: false }));
+      set((state) => {
+        const currentConversationId =
+          state.currentConversationId &&
+          conversations.some((conv) => conv.id === state.currentConversationId)
+            ? state.currentConversationId
+            : null;
+
+        return {
+          conversations,
+          currentConversationId,
+          messages: currentConversationId ? state.messages : [],
+          pendingApproval: currentConversationId ? state.pendingApproval : null,
+          loadingConversations: false,
+        };
+      });
     } catch (e) {
       console.error("loadConversations failed:", e);
       set(() => ({ loadingConversations: false }));
@@ -410,7 +424,7 @@ export const useStore = create<AppState>((set, get) => ({
     await get().loadConversation(id);
     // 同时通过 socket 通知后端（保持兼容性）
     socket?.loadConversation(id);
-    void get().loadConversations();
+    void get().loadConversations(get().currentProjectId ?? undefined);
   },
 
   deleteConversation: async (id: string) => {
@@ -476,10 +490,17 @@ export const useStore = create<AppState>((set, get) => ({
 
   switchProject: async (id) => {
     try {
+      set(() => ({
+        currentProjectId: id,
+        currentConversationId: null,
+        conversations: [],
+        messages: [],
+        pendingApproval: null,
+      }));
       await api.switchProject(id);
-      set(() => ({ currentProjectId: id }));
       await get().refreshConfig();
       void get().loadFiles();
+      await get().loadConversations(id);
     } catch (e) {
       console.error("switchProject failed:", e);
     }

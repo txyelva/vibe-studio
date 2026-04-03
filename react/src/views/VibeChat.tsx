@@ -925,9 +925,10 @@ export default function VibeChat() {
     config,
     currentConversationId,
     createConversation,
-    loadConversation,
+    switchConversation,
     conversations,
     loadConversations,
+    loadingConversations,
     deleteConversation,
     updateConversationTitle,
     projects,
@@ -943,6 +944,13 @@ export default function VibeChat() {
   const effectiveProjectId = projectId || currentProjectId;
   const currentProject = projects.find((p) => p.id === effectiveProjectId);
 
+  // 项目路由切换时，先把 store 的当前项目对齐，避免继续沿用上一个项目的 thread 上下文
+  useEffect(() => {
+    if (projectId && projectId !== currentProjectId) {
+      void switchProject(projectId);
+    }
+  }, [projectId, currentProjectId, switchProject]);
+
   // 加载项目对应的对话列表
   useEffect(() => {
     if (effectiveProjectId) {
@@ -955,12 +963,13 @@ export default function VibeChat() {
   // 如果 URL 中有 threadId，加载对应对话
   useEffect(() => {
     if (threadId && threadId !== currentConversationId) {
-      void loadConversation(threadId);
+      void switchConversation(threadId);
     }
-  }, [threadId, currentConversationId, loadConversation]);
+  }, [threadId, currentConversationId, switchConversation]);
 
   // 如果没有当前对话且 URL 中没有 threadId，自动创建或选中第一个
   useEffect(() => {
+    if (loadingConversations) return;
     if (!currentConversationId && !isCreating && effectiveProjectId && !threadId) {
       // 如果有对话列表，选中第一个
       if (conversations.length > 0) {
@@ -971,7 +980,7 @@ export default function VibeChat() {
         void createConversation(effectiveProjectId).finally(() => setIsCreating(false));
       }
     }
-  }, [currentConversationId, conversations.length, effectiveProjectId, createConversation, isCreating, threadId]);
+  }, [currentConversationId, conversations, createConversation, effectiveProjectId, isCreating, loadingConversations, threadId]);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -980,7 +989,7 @@ export default function VibeChat() {
 
   // 切换对话
   const handleSwitchConversation = async (id: string) => {
-    await loadConversation(id);
+    await switchConversation(id);
     // 更新 URL 包含 threadId
     if (projectId) {
       navigate(`/projects/${projectId}/thread/${id}`, { replace: true });
