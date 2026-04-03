@@ -22,20 +22,33 @@
 - macOS：已验证可安装、可启动，并提供 `launchd` 常驻服务脚本
 - Linux / Windows：核心应用理论可运行，但安装流程、守护启动和兼容性尚未完整验证，暂不作为正式支持平台
 
-### 方式一：macOS 一键安装（推荐）
+### 方式一：macOS 一条命令安装（推荐）
 
 ```bash
-# 1. 克隆仓库
-git clone <your-repo-url>
-cd vibe-studio
-
-# 2. 一键安装并启用常驻服务
-./scripts/install-macos.sh
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/txyelva/vibe-studio/main/scripts/bootstrap-macos.sh)"
 ```
+
+这条命令会自动：
+
+- 克隆或更新仓库到 `~/vibe-studio`
+- 创建虚拟环境
+- 安装 Python 依赖
+- 构建前端
+- 安装并启动 macOS `launchd` 常驻服务
 
 安装完成后服务会自动运行在 `http://127.0.0.1:7788/`。
 
-### 方式二：通用手动安装
+### 方式二：仓库内快速安装
+
+如果你已经手动克隆了仓库，可以在仓库目录里运行：
+
+```bash
+git clone https://github.com/txyelva/vibe-studio.git
+cd vibe-studio
+./scripts/install-macos.sh
+```
+
+### 方式三：通用手动安装
 
 ```bash
 # 1. 创建虚拟环境
@@ -54,7 +67,7 @@ vibe-studio
 
 访问 http://localhost:7788
 
-### 方式三：兼容设置脚本
+### 方式四：兼容设置脚本
 
 如果你更想一步步确认安装过程，也可以继续使用旧的设置脚本：
 
@@ -62,7 +75,7 @@ vibe-studio
 ./scripts/setup.sh
 ```
 
-### 方式四：macOS 常驻服务
+### 方式五：macOS 常驻服务
 
 如果你已经手动装好依赖，只想单独安装常驻服务，可以用仓库自带的 `launchd` 安装脚本：
 
