@@ -143,6 +143,20 @@ npm run build
 
 构建输出在 `react/dist/`，会自动复制到 `vibe_studio/dist/`。
 
+### Public / Live 同步
+
+建议把当前仓库作为唯一主线，运行目录只作为本地副本：
+
+```bash
+# 先把 live 目录里的历史漂移归档
+./scripts/archive-live-drift.sh
+
+# 再把 public 同步到 live，自动构建并重启 7788
+./scripts/sync-live.sh
+```
+
+默认会同步到当前仓库旁边的 `../vibe-studio`。如有需要，也可以手动传入 live 目录路径。
+
 ## 安全注意事项
 
 ⚠️ **上传前请务必执行**:
