@@ -28,7 +28,7 @@
 
 ### 项目工作台
 
-![Projects Demo](docs/screenshots/projects-cards-demo.png)
+![Projects Demo](docs/screenshots/projects-full-demo.png)
 
 ### Thread 工作区
 
