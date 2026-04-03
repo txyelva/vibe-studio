@@ -183,14 +183,17 @@ cp .env.example .env
 
 | 提供商 | 类型 | 说明 |
 |--------|------|------|
-| OpenAI | GPT-4o, o3, o1 | 原生 OpenAI API |
+| OpenAI API | GPT-4o, GPT-4o Mini, o3-mini, o1 | 原生 OpenAI API |
+| OpenAI ChatGPT OAuth (Codex) | GPT-5.4, GPT-5.4 Mini, GPT-5.3 Codex, GPT-5.2 Codex | ChatGPT OAuth / Codex Responses |
 | Anthropic | Claude Opus/Sonnet/Haiku | 原生 Anthropic API |
-| MiniMax | M2.7, M2.5, Text-01 | Token Plan (Anthropic 兼容) |
-| Moonshot | Kimi K2 | OpenAI 兼容 |
+| MiniMax | M2.7, M2.5, M2.1, M2, M1, Text-01, VL-01 | Token Plan (Anthropic 兼容) |
+| Moonshot | Kimi K2 Turbo, K2 Thinking | OpenAI 兼容 |
+| Kimi Coding | K2P5 | Anthropic 兼容编程模型 |
 | DeepSeek | V3, R1 | OpenAI 兼容 |
-| Google Gemini | 2.5 Pro/Flash | OpenAI 兼容 |
-| 智谱 AI | GLM-4 | OpenAI 兼容 |
-| 火山引擎 | 豆包 | OpenAI 兼容 |
+| Google Gemini | 2.5 Pro, 2.5 Flash, 2.0 Flash | OpenAI 兼容 |
+| 智谱 AI | GLM-4 Plus, GLM-4 Air, GLM-4 Flash | OpenAI 兼容 |
+| 火山引擎 | Doubao Pro, Doubao Lite, DeepSeek R1, DeepSeek V3 | OpenAI 兼容 |
+| 通义千问 | Qwen Max, Qwen Plus, Qwen Turbo | OpenAI 兼容 |
 
 ## 开发
 
