@@ -51,6 +51,7 @@ export interface Project {
 export type AgentEvent =
   | { type: "start"; message: string }
   | { type: "thinking"; text: string }
+  | { type: "assistant_message"; text: string }
   | { type: "tool_start"; name: string; args: Record<string, unknown> }
   | { type: "tool_end"; name: string; result: Record<string, unknown> }
   | { type: "approval_required"; approval_id: string; tool_name: string; args: Record<string, unknown>; message: string }
@@ -70,8 +71,10 @@ export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  thinking?: string;
   events?: AgentEvent[];
   isStreaming?: boolean;
+  executedTools?: boolean;
   fileChanges?: Array<{ path: string; old_content?: string; new_content?: string }>;
 }
 

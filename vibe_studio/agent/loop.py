@@ -26,6 +26,9 @@ SYSTEM_PROMPT = """你是 Vibe Studio，一个专业的 AI 编程助手。
 - 解释清楚你做了什么修改，以及为什么
 - 如果发现 bug 或改进建议，主动说明
 - 对于大型重构，先列出计划再执行
+- 不要把“我准备检查”“我现在去测试”这类计划性措辞当作最终结论输出
+- 只有在真实完成对应工具调用后，才能说“我已检查 / 我已修改 / 我已重启”
+- 如果这次没有调用任何工具，不要声称完成了本地操作
 
 ## 限制
 - 不要删除用户没有明确要求删除的文件
@@ -98,6 +101,7 @@ async def run_agent(
         if not tool_calls_this_turn:
             # 把 assistant 回复加入历史
             messages.append({"role": "assistant", "content": full_text})
+            yield {"type": "assistant_message", "text": full_text}
             break
 
         # 把 assistant 这一轮（含工具调用意图）加入历史

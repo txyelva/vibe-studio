@@ -75,13 +75,23 @@ function createSocket(
         }
         case "thinking": {
           if (!last || last.role !== "assistant") return {};
-          msgs[msgs.length - 1] = { ...last, content: last.content + event.text };
+          msgs[msgs.length - 1] = { ...last, thinking: (last.thinking ?? "") + event.text };
+          return { messages: msgs };
+        }
+        case "assistant_message": {
+          if (!last || last.role !== "assistant") return {};
+          msgs[msgs.length - 1] = { ...last, content: event.text };
           return { messages: msgs };
         }
         case "tool_start":
         case "tool_end": {
           if (!last || last.role !== "assistant") return {};
-          msgs[msgs.length - 1] = { ...last, events: [...(last.events ?? []), event] };
+          const executedTools =
+            event.type === "tool_end" &&
+            !(typeof event.result === "object" && event.result !== null && "permission_denied" in event.result && (event.result as Record<string, unknown>).permission_denied === true)
+              ? true
+              : last.executedTools;
+          msgs[msgs.length - 1] = { ...last, events: [...(last.events ?? []), event], executedTools };
           return { messages: msgs };
         }
         case "approval_required": {
@@ -116,7 +126,12 @@ function createSocket(
         }
         case "done": {
           if (!last || last.role !== "assistant") return { isAgentRunning: false };
-          msgs[msgs.length - 1] = { ...last, isStreaming: false };
+          let content = last.content;
+          if (!content.trim()) {
+            if (last.executedTools) content = "已完成本地操作，详细过程见上方工具执行记录。";
+            else if ((last.thinking ?? "").trim()) content = "本次只生成了思考或计划，没有实际执行本地操作。";
+          }
+          msgs[msgs.length - 1] = { ...last, content, isStreaming: false };
           return { messages: msgs, isAgentRunning: false, pendingApproval: null };
         }
         case "error": {
@@ -303,8 +318,10 @@ export const useStore = create<AppState>((set, get) => ({
       id: crypto.randomUUID(),
       role: "assistant",
       content: "",
+      thinking: "",
       events: [],
       isStreaming: true,
+      executedTools: false,
       fileChanges: [],
     };
 

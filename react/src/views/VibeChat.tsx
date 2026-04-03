@@ -214,6 +214,49 @@ function FileChangeBadge({ path, isNew, isDeleted }: { path: string; isNew?: boo
   );
 }
 
+function ThinkingPanel({ thinking, executedTools }: { thinking: string; executedTools?: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const label = executedTools ? "执行前思路" : "思考/计划（未证明已执行）";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <button
+        onClick={() => setExpanded((value) => !value)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          alignSelf: "flex-start",
+          padding: "6px 10px",
+          backgroundColor: "rgba(255,193,7,0.08)",
+          border: "1px solid rgba(255,193,7,0.2)",
+          color: "#ffcc66",
+          fontSize: 11,
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        <span>{expanded ? "▼" : "▶"}</span>
+        <span>{label}</span>
+      </button>
+      {expanded && (
+        <div
+          style={{
+            padding: "12px 14px",
+            backgroundColor: "rgba(255,193,7,0.04)",
+            border: "1px solid rgba(255,193,7,0.15)",
+            fontSize: 12,
+            color: "#d6d6d6",
+            lineHeight: "1.7",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {thinking}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ToolCallItem({ event }: { event: AgentEvent }) {
   if (event.type === "tool_start") {
     let detail = "";
@@ -416,11 +459,15 @@ function MessageItem({ msg }: { msg: ChatMessage }) {
         >
           {msg.events?.filter((e) => e.type === "tool_start" || e.type === "tool_end" || e.type === "file_changed" || e.type === "approval_required" || e.type === "approval_resolved").map((e, i) => <ToolCallItem key={i} event={e} />)}
 
-          <div style={{ fontSize: 13, color: "#fff", lineHeight: "1.6" }}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-              {msg.content}
-            </ReactMarkdown>
-          </div>
+          {msg.thinking?.trim() && <ThinkingPanel thinking={msg.thinking} executedTools={msg.executedTools} />}
+
+          {msg.content.trim() && (
+            <div style={{ fontSize: 13, color: "#fff", lineHeight: "1.6" }}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                {msg.content}
+              </ReactMarkdown>
+            </div>
+          )}
 
           {hasFileChanges && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
