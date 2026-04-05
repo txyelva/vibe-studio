@@ -1,7 +1,9 @@
 """WebSocket Agent 通信层"""
 from __future__ import annotations
 
+import asyncio
 import json
+from contextlib import suppress
 from datetime import datetime
 from uuid import uuid4
 
@@ -77,12 +79,30 @@ async def agent_websocket(websocket: WebSocket) -> None:
     # 当前连接的对话 ID 和历史
     current_conv_id: str | None = None
     conversation_history: list[dict] = []
+    current_agent_task: asyncio.Task[None] | None = None
+    pending_approvals: dict[str, asyncio.Future[dict]] = {}
 
     async def send(data: dict) -> None:
         await websocket.send_text(json.dumps(data, ensure_ascii=False))
 
+    async def persist_current_conversation() -> None:
+        if not current_conv_id:
+            return
+        conv = get_conversation(current_conv_id)
+        if not conv:
+            return
+        conv.messages = list(conversation_history)
+        conv.updated_at = datetime.now().isoformat()
+        if conv.title == "新对话" and len(conversation_history) >= 2:
+            new_title = generate_conversation_title(list(conversation_history))
+            if new_title and new_title != "新对话":
+                conv.title = new_title
+        save_conversation(conv)
+
     async def resolve_tool_approval(tool_name: str, args: dict) -> dict:
         approval_id = uuid4().hex
+        approval_future: asyncio.Future[dict] = asyncio.get_running_loop().create_future()
+        pending_approvals[approval_id] = approval_future
         await send({
             "type": "approval_required",
             "approval_id": approval_id,
@@ -90,38 +110,41 @@ async def agent_websocket(websocket: WebSocket) -> None:
             "args": args,
             "message": f"工具 '{tool_name}' 需要人工审批后才能执行",
         })
+        try:
+            return await approval_future
+        finally:
+            pending_approvals.pop(approval_id, None)
 
-        while True:
-            raw_approval = await websocket.receive_text()
-            try:
-                approval_msg = json.loads(raw_approval)
-            except json.JSONDecodeError:
-                await send({"type": "error", "text": "审批消息格式错误，需要 JSON"})
-                continue
+    async def cancel_current_agent(send_event: bool = True) -> bool:
+        nonlocal current_agent_task
+        task = current_agent_task
+        if not task or task.done():
+            return False
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+        current_agent_task = None
+        if send_event:
+            await send({"type": "stopped"})
+        return True
 
-            approval_type = approval_msg.get("type")
-            if approval_type == "ping":
-                await send({"type": "pong"})
-                continue
-
-            if approval_type != "tool_approval":
-                await send({"type": "error", "text": "当前正在等待工具审批响应"})
-                continue
-
-            if approval_msg.get("approval_id") != approval_id:
-                await send({"type": "error", "text": "审批 ID 不匹配"})
-                continue
-
-            approved = bool(approval_msg.get("approved"))
-            reason = str(approval_msg.get("reason") or "").strip()
-            await send({
-                "type": "approval_resolved",
-                "approval_id": approval_id,
-                "tool_name": tool_name,
-                "approved": approved,
-                "reason": reason or None,
-            })
-            return {"approved": approved, "reason": reason}
+    async def run_agent_task(user_message: str, workspace: str, config_for_run) -> None:
+        nonlocal current_agent_task
+        try:
+            async for event in run_agent(
+                user_message=user_message,
+                workspace=workspace,
+                config=config_for_run,
+                conversation_history=conversation_history,
+                approval_resolver=resolve_tool_approval,
+            ):
+                await send(event)
+        except asyncio.CancelledError:
+            await persist_current_conversation()
+            raise
+        finally:
+            await persist_current_conversation()
+            current_agent_task = None
 
     try:
         while True:
@@ -135,6 +158,10 @@ async def agent_websocket(websocket: WebSocket) -> None:
             msg_type = msg.get("type", "chat")
 
             if msg_type == "chat":
+                if current_agent_task and not current_agent_task.done():
+                    await send({"type": "error", "text": "当前已有任务在运行，请先停止或等待完成"})
+                    continue
+
                 user_message = msg.get("message", "").strip()
                 if not user_message:
                     continue
@@ -202,27 +229,18 @@ async def agent_websocket(websocket: WebSocket) -> None:
                     from dataclasses import replace
                     config_for_run = replace(cfg, primary_model=model_to_use)
 
-                async for event in run_agent(
-                    user_message=user_message,
-                    workspace=cfg.workspace,
-                    config=config_for_run,
-                    conversation_history=conversation_history,
-                    approval_resolver=resolve_tool_approval,
-                ):
-                    await send(event)
-
-                if current_conv_id:
-                    conv = get_conversation(current_conv_id)
-                    if conv:
-                        conv.messages = list(conversation_history)
-                        conv.updated_at = datetime.now().isoformat()
-                        if conv.title == "新对话" and len(conversation_history) >= 2:
-                            new_title = generate_conversation_title(list(conversation_history))
-                            if new_title and new_title != "新对话":
-                                conv.title = new_title
-                        save_conversation(conv)
+                current_agent_task = asyncio.create_task(
+                    run_agent_task(
+                        user_message=user_message,
+                        workspace=cfg.workspace,
+                        config_for_run=config_for_run,
+                    )
+                )
 
             elif msg_type == "load_conversation":
+                if current_agent_task and not current_agent_task.done():
+                    await send({"type": "error", "text": "当前任务运行中，无法切换对话"})
+                    continue
                 conv_id = msg.get("conversation_id")
                 if conv_id:
                     conv = get_conversation(conv_id)
@@ -239,6 +257,9 @@ async def agent_websocket(websocket: WebSocket) -> None:
                         await send({"type": "error", "text": "对话不存在"})
             
             elif msg_type == "set_model":
+                if current_agent_task and not current_agent_task.done():
+                    await send({"type": "error", "text": "当前任务运行中，无法切换模型"})
+                    continue
                 # 显式设置当前对话的模型
                 conv_id = msg.get("conversation_id") or current_conv_id
                 model = msg.get("model")
@@ -255,15 +276,46 @@ async def agent_websocket(websocket: WebSocket) -> None:
                     await send({"type": "error", "text": "缺少对话ID或模型"})
 
             elif msg_type == "clear":
+                if current_agent_task and not current_agent_task.done():
+                    await cancel_current_agent(send_event=False)
                 conversation_history.clear()
                 current_conv_id = None
                 await send({"type": "cleared"})
+
+            elif msg_type == "tool_approval":
+                approval_id = str(msg.get("approval_id") or "")
+                approval_future = pending_approvals.get(approval_id)
+                if approval_future is None:
+                    await send({"type": "error", "text": "当前没有匹配的审批请求"})
+                    continue
+                approved = bool(msg.get("approved"))
+                reason = str(msg.get("reason") or "").strip()
+                if not approval_future.done():
+                    approval_future.set_result({"approved": approved, "reason": reason})
+                await send({
+                    "type": "approval_resolved",
+                    "approval_id": approval_id,
+                    "tool_name": msg.get("tool_name"),
+                    "approved": approved,
+                    "reason": reason or None,
+                })
+
+            elif msg_type == "stop":
+                stopped = await cancel_current_agent(send_event=True)
+                if not stopped:
+                    await send({"type": "error", "text": "当前没有可停止的运行任务"})
 
             elif msg_type == "ping":
                 await send({"type": "pong"})
 
     except WebSocketDisconnect:
-        pass
+        for future in pending_approvals.values():
+            if not future.done():
+                future.cancel()
+        if current_agent_task and not current_agent_task.done():
+            current_agent_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await current_agent_task
     except Exception as e:
         try:
             await send({"type": "error", "text": f"服务器错误: {e}"})

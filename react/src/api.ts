@@ -190,6 +190,12 @@ export class AgentSocket {
     }
   }
 
+  stop() {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "stop" }));
+    }
+  }
+
   respondToApproval(approvalId: string, approved: boolean, reason?: string) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ type: "tool_approval", approval_id: approvalId, approved, reason }));

@@ -59,6 +59,7 @@ export type AgentEvent =
   | { type: "file_changed"; path: string; old_content?: string; new_content?: string }
   | { type: "error"; text: string }
   | { type: "done" }
+  | { type: "stopped" }
   | { type: "cleared" }
   | { type: "pong" }
   | { type: "conversation_created"; conversation_id: string; model?: string }

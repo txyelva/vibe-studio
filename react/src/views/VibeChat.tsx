@@ -920,6 +920,7 @@ export default function VibeChat() {
     isAgentRunning,
     sendMessage,
     respondToApproval,
+    stopAgent,
     clearChat,
     wsConnected,
     config,
@@ -1302,6 +1303,22 @@ export default function VibeChat() {
               <span style={{ fontSize: 10, fontWeight: "bold", color: "#00ff88" }}>Live</span>
             </div>
             <button
+              onClick={stopAgent}
+              disabled={!isAgentRunning}
+              style={{
+                padding: "6px 12px",
+                backgroundColor: "transparent",
+                border: "1px solid #7a2f2f",
+                color: isAgentRunning ? "#ff6b6b" : "#6a6a6a",
+                fontSize: 11,
+                cursor: isAgentRunning ? "pointer" : "not-allowed",
+                fontFamily: "inherit",
+                opacity: isAgentRunning ? 1 : 0.5,
+              }}
+            >
+              Stop
+            </button>
+            <button
               onClick={clearChat}
               style={{
                 padding: "6px 12px",
@@ -1428,36 +1445,59 @@ export default function VibeChat() {
                 lineHeight: "1.5",
               }}
             />
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || isAgentRunning || !wsConnected}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "8px 14px",
-                backgroundColor: "#00ff88",
-                border: "none",
-                color: "#0c0c0c",
-                fontSize: 12,
-                fontWeight: "bold",
-                letterSpacing: 0.5,
-                cursor: input.trim() && !isAgentRunning && wsConnected ? "pointer" : "not-allowed",
-                opacity: input.trim() && !isAgentRunning && wsConnected ? 1 : 0.5,
-                fontFamily: "inherit",
-              }}
-            >
-              <div
+            {isAgentRunning ? (
+              <button
+                onClick={stopAgent}
                 style={{
-                  width: 13,
-                  height: 13,
-                  backgroundImage: "url(/images/send.png)",
-                  backgroundSize: "contain",
-                  backgroundRepeat: "no-repeat",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 14px",
+                  backgroundColor: "transparent",
+                  border: "1px solid #7a2f2f",
+                  color: "#ff6b6b",
+                  fontSize: 12,
+                  fontWeight: "bold",
+                  letterSpacing: 0.5,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
                 }}
-              />
-              Send
-            </button>
+              >
+                <span style={{ fontSize: 12 }}>■</span>
+                Stop
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || !wsConnected}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 14px",
+                  backgroundColor: "#00ff88",
+                  border: "none",
+                  color: "#0c0c0c",
+                  fontSize: 12,
+                  fontWeight: "bold",
+                  letterSpacing: 0.5,
+                  cursor: input.trim() && wsConnected ? "pointer" : "not-allowed",
+                  opacity: input.trim() && wsConnected ? 1 : 0.5,
+                  fontFamily: "inherit",
+                }}
+              >
+                <div
+                  style={{
+                    width: 13,
+                    height: 13,
+                    backgroundImage: "url(/images/send.png)",
+                    backgroundSize: "contain",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                />
+                Send
+              </button>
+            )}
           </div>
           <div
             style={{

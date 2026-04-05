@@ -141,6 +141,18 @@ function createSocket(
           msgs[msgs.length - 1] = { ...last, content, unverifiedContent, isStreaming: false };
           return { messages: msgs, isAgentRunning: false, pendingApproval: null };
         }
+        case "stopped": {
+          if (!last || last.role !== "assistant") return { isAgentRunning: false, pendingApproval: null };
+          const stoppedContent = last.executedTools
+            ? "当前任务已手动停止，已保留上方已执行的步骤。"
+            : "当前任务已手动停止，尚未完成本地操作。";
+          msgs[msgs.length - 1] = {
+            ...last,
+            content: last.content.trim() ? `${last.content}\n\n⏹️ 已手动停止当前任务。` : stoppedContent,
+            isStreaming: false,
+          };
+          return { messages: msgs, isAgentRunning: false, pendingApproval: null };
+        }
         case "error": {
           if (!last || last.role !== "assistant") return {};
           msgs[msgs.length - 1] = {
@@ -192,6 +204,7 @@ interface AppState {
   openFile: (path: string) => Promise<void>;
   sendMessage: (text: string) => void;
   respondToApproval: (approved: boolean, reason?: string) => void;
+  stopAgent: () => void;
   clearChat: () => void;
   setShowSettings: (v: boolean) => void;
 
@@ -347,6 +360,10 @@ export const useStore = create<AppState>((set, get) => ({
     const approval = get().pendingApproval;
     if (!socket || !approval) return;
     socket.respondToApproval(approval.approvalId, approved, reason);
+  },
+
+  stopAgent: () => {
+    socket?.stop();
   },
 
   clearChat: () => {
