@@ -153,6 +153,13 @@ async def run_agent(
     original_user_content = user_message
     toolless_retries = 0
     has_executed_tool = False
+    run_state = {
+        "files_read": set(),
+        "files_changed": set(),
+        "commands_executed": [],
+        "tools_used": set(),
+        "errors": [],
+    }
 
     for turn in range(MAX_TURNS):
         tool_calls_this_turn: list[dict] = []
@@ -166,6 +173,7 @@ async def run_agent(
 
             elif event["type"] == TOOL_CALL:
                 tool_calls_this_turn.append(event)
+                run_state["tools_used"].add(event["name"])
 
             elif event["type"] == DONE:
                 full_text = event.get("text", full_text)
@@ -249,6 +257,18 @@ async def run_agent(
             yield {"type": "tool_end", "name": tc["name"], "result": result}
             has_executed_tool = True
 
+            if tc["name"] == "read_file" and "path" in tc["args"]:
+                run_state["files_read"].add(str(tc["args"]["path"]))
+            if tc["name"] in ("write_file", "str_replace") and "path" in result:
+                run_state["files_changed"].add(str(result["path"]))
+            if tc["name"] == "bash_exec":
+                run_state["commands_executed"].append({
+                    "command": str(tc["args"].get("command") or ""),
+                    "exit_code": result.get("exit_code"),
+                })
+            if "error" in result:
+                run_state["errors"].append(str(result["error"]))
+
             # 文件变化事件（给前端高亮展示）
             if tc["name"] in ("write_file", "str_replace") and "error" not in result:
                 yield {
@@ -283,4 +303,27 @@ async def run_agent(
         yield {"type": "error", "text": f"超过最大轮次限制（{MAX_TURNS}），任务终止"}
 
     conversation_history[:] = messages
+    summary_text = ""
+    if run_state["files_changed"]:
+        summary_text = f"修改了 {len(run_state['files_changed'])} 个文件"
+    elif run_state["commands_executed"]:
+        summary_text = f"执行了 {len(run_state['commands_executed'])} 条命令"
+    elif run_state["files_read"]:
+        summary_text = f"读取了 {len(run_state['files_read'])} 个文件"
+    elif has_executed_tool:
+        summary_text = f"调用了 {len(run_state['tools_used'])} 个工具"
+    elif run_state["errors"]:
+        summary_text = "执行过程中出现错误"
+
+    yield {
+        "type": "run_summary_final",
+        "summary": {
+            "files_read": sorted(run_state["files_read"]),
+            "files_changed": sorted(run_state["files_changed"]),
+            "commands_executed": run_state["commands_executed"],
+            "tools_used": sorted(run_state["tools_used"]),
+            "error_count": len(run_state["errors"]),
+            "summary_text": summary_text,
+        },
+    }
     yield {"type": "done"}

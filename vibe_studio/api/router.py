@@ -18,6 +18,7 @@ from ..conversation import (
     get_conversation,
     list_conversations,
     update_conversation_title,
+    update_conversation_meta,
     append_messages,
 )
 from .auth import router as auth_router
@@ -170,6 +171,13 @@ class FileNode(BaseModel):
     children: list["FileNode"] = []
 
 
+class SearchResult(BaseModel):
+    path: str
+    line: int
+    column: int
+    preview: str
+
+
 def _build_tree(path: Path, workspace: Path, depth: int = 0, max_depth: int = 5) -> list[dict]:
     """递归构建目录树，限制深度和隐藏文件"""
     if depth > max_depth:
@@ -238,6 +246,87 @@ async def set_workspace(body: dict) -> dict:
     return {"success": True, "workspace": cfg.workspace}
 
 
+@protected_router.get("/search")
+async def search_workspace(q: str, path: str = ".") -> dict:
+    query = q.strip()
+    if not query:
+        raise HTTPException(400, "搜索关键词不能为空")
+
+    cfg = load_config()
+    workspace = Path(cfg.workspace).resolve()
+    target = (workspace / path).resolve()
+    if not str(target).startswith(str(workspace)):
+        raise HTTPException(403, "路径越界")
+    if not target.exists():
+        raise HTTPException(404, f"搜索目录不存在: {path}")
+
+    rg_cmd = [
+        "rg",
+        "--line-number",
+        "--column",
+        "--no-heading",
+        "--color",
+        "never",
+        "--smart-case",
+        "--max-count",
+        "200",
+        query,
+        str(target),
+    ]
+    grep_cmd = [
+        "grep",
+        "-RIn",
+        query,
+        str(target),
+    ]
+
+    try:
+        try:
+            completed = subprocess.run(
+                rg_cmd,
+                capture_output=True,
+                text=True,
+                cwd=str(workspace),
+                timeout=10,
+            )
+            stdout = completed.stdout
+            stderr = completed.stderr
+        except FileNotFoundError:
+            completed = subprocess.run(
+                grep_cmd,
+                capture_output=True,
+                text=True,
+                cwd=str(workspace),
+                timeout=10,
+            )
+            stdout = completed.stdout
+            stderr = completed.stderr
+
+        if completed.returncode not in (0, 1):
+            raise HTTPException(500, stderr.strip() or "搜索失败")
+
+        results: list[dict[str, Any]] = []
+        for raw_line in stdout.splitlines():
+            if not raw_line.strip():
+                continue
+            if raw_line.count(":") < 3:
+                continue
+            file_path, line_no, column_no, preview = raw_line.split(":", 3)
+            absolute_path = Path(file_path).resolve()
+            if not str(absolute_path).startswith(str(workspace)):
+                continue
+            relative_path = str(absolute_path.relative_to(workspace))
+            results.append({
+                "path": relative_path,
+                "line": int(line_no),
+                "column": int(column_no),
+                "preview": preview.strip(),
+            })
+        return {"results": results, "query": query, "workspace": str(workspace)}
+    except subprocess.TimeoutExpired:
+        raise HTTPException(504, "搜索超时")
+
+
 # ──────────────────────────────────────────────
 # 对话历史
 # ──────────────────────────────────────────────
@@ -246,10 +335,22 @@ class CreateConversationRequest(BaseModel):
     title: str = "新对话"
     project_id: str | None = None
     model: str | None = None  # 可选，指定模型 (provider/model_id)，不指定则使用主模型
+    workspace: str | None = None
+    task_mode: str = "ask"
 
 
 class UpdateTitleRequest(BaseModel):
     title: str
+
+
+class UpdateTaskRequest(BaseModel):
+    title: str | None = None
+    project_id: str | None = None
+    workspace: str | None = None
+    model: str | None = None
+    status: str | None = None
+    task_mode: str | None = None
+    summary: str | None = None
 
 
 @protected_router.get("/conversations")
@@ -274,7 +375,7 @@ async def get_conversations(project_id: str | None = None) -> dict:
 
 @protected_router.post("/conversations")
 async def post_create_conversation(req: CreateConversationRequest) -> dict:
-    conv = create_conversation(req.title, req.project_id, req.model)
+    conv = create_conversation(req.title, req.project_id, req.model, req.workspace, req.task_mode)
     return {"success": True, "conversation": conv.to_dict()}
 
 
@@ -307,6 +408,58 @@ async def post_append_messages(conv_id: str, body: dict) -> dict:
     if not conv:
         raise HTTPException(404, "对话不存在")
     return {"success": True, "conversation": conv.to_dict()}
+
+
+def _conversation_to_task_dict(conv) -> dict:
+    return {
+        "id": conv.id,
+        "title": conv.title,
+        "created_at": conv.created_at,
+        "updated_at": conv.updated_at,
+        "project_id": conv.project_id,
+        "workspace": conv.workspace,
+        "message_count": len(conv.messages),
+        "model": conv.model,
+        "status": conv.status,
+        "task_mode": conv.task_mode,
+        "summary": conv.summary,
+        "last_error": conv.last_error,
+        "changed_files": conv.changed_files,
+        "executed_commands": conv.executed_commands,
+        "last_run_at": conv.last_run_at,
+        "last_run_summary": conv.last_run_summary,
+    }
+
+
+@protected_router.get("/tasks")
+async def get_tasks(project_id: str | None = None, status: str | None = None) -> dict:
+    tasks = list_conversations(project_id)
+    if status:
+        tasks = [task for task in tasks if task.status == status]
+    return {"tasks": [_conversation_to_task_dict(task) for task in tasks]}
+
+
+@protected_router.post("/tasks")
+async def create_task(req: CreateConversationRequest) -> dict:
+    task = create_conversation(req.title, req.project_id, req.model, req.workspace, req.task_mode)
+    return {"success": True, "task": _conversation_to_task_dict(task)}
+
+
+@protected_router.get("/tasks/{task_id}")
+async def get_task_detail(task_id: str) -> dict:
+    task = get_conversation(task_id)
+    if not task:
+        raise HTTPException(404, "任务不存在")
+    return {"task": task.to_dict()}
+
+
+@protected_router.patch("/tasks/{task_id}")
+async def patch_task(task_id: str, req: UpdateTaskRequest) -> dict:
+    patch = req.model_dump(exclude_none=True)
+    task = update_conversation_meta(task_id, **patch)
+    if not task:
+        raise HTTPException(404, "任务不存在")
+    return {"success": True, "task": _conversation_to_task_dict(task)}
 
 
 # ──────────────────────────────────────────────

@@ -16,6 +16,7 @@ from ..conversation import (
     create_conversation,
     generate_conversation_title,
     update_conversation_title,
+    update_conversation_meta,
 )
 
 ws_router = APIRouter()
@@ -160,7 +161,9 @@ async def agent_websocket(websocket: WebSocket) -> None:
                     # 自动创建新对话，传入 project_id 和 model
                     project_id = msg.get("project_id")
                     model = msg.get("model")  # 可选的模型指定
-                    new_conv = create_conversation("新对话", project_id, model)
+                    workspace = msg.get("workspace") or cfg.workspace
+                    task_mode = msg.get("task_mode") or "ask"
+                    new_conv = create_conversation("新对话", project_id, model, workspace, task_mode)
                     conv = new_conv
                     current_conv_id = new_conv.id
                     conversation_history = []
@@ -188,6 +191,15 @@ async def agent_websocket(websocket: WebSocket) -> None:
                     continue
 
                 await send({"type": "start", "message": user_message})
+                if current_conv_id:
+                    update_conversation_meta(
+                        current_conv_id,
+                        status="running",
+                        last_error=None,
+                        workspace=cfg.workspace,
+                        last_run_at=datetime.now().isoformat(),
+                    )
+                    await send({"type": "task_status", "status": "running"})
 
                 # 确定使用哪个模型
                 # 优先级: 对话指定的 model > config.primary_model
@@ -202,6 +214,8 @@ async def agent_websocket(websocket: WebSocket) -> None:
                     from dataclasses import replace
                     config_for_run = replace(cfg, primary_model=model_to_use)
 
+                latest_run_summary = None
+                latest_error = None
                 async for event in run_agent(
                     user_message=user_message,
                     workspace=cfg.workspace,
@@ -209,6 +223,10 @@ async def agent_websocket(websocket: WebSocket) -> None:
                     conversation_history=conversation_history,
                     approval_resolver=resolve_tool_approval,
                 ):
+                    if event.get("type") == "run_summary_final":
+                        latest_run_summary = event.get("summary")
+                    elif event.get("type") == "error":
+                        latest_error = event.get("text")
                     await send(event)
 
                 if current_conv_id:
@@ -220,7 +238,19 @@ async def agent_websocket(websocket: WebSocket) -> None:
                             new_title = generate_conversation_title(list(conversation_history))
                             if new_title and new_title != "新对话":
                                 conv.title = new_title
+                        if latest_run_summary:
+                            conv.last_run_summary = latest_run_summary
+                            conv.summary = latest_run_summary.get("summary_text", "")
+                            conv.changed_files = latest_run_summary.get("files_changed", [])
+                            conv.executed_commands = [
+                                item.get("command", "")
+                                for item in latest_run_summary.get("commands_executed", [])
+                                if isinstance(item, dict) and item.get("command")
+                            ]
+                        conv.last_error = latest_error
+                        conv.status = "failed" if latest_error else "done"
                         save_conversation(conv)
+                        await send({"type": "task_status", "status": conv.status})
 
             elif msg_type == "load_conversation":
                 conv_id = msg.get("conversation_id")

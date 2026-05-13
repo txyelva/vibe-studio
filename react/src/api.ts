@@ -1,4 +1,4 @@
-import type { AppConfig, FileNode, Conversation, Project } from "./types";
+import type { AppConfig, FileNode, Conversation, Project, TaskSession, SearchResult } from "./types";
 
 const BASE = "";
 
@@ -104,8 +104,42 @@ export const api = {
   readFile: (path: string) =>
     get<{ content: string; path: string }>(`/api/files/read?path=${encodeURIComponent(path)}`),
 
+  searchWorkspace: (query: string, path = ".") =>
+    get<{ results: SearchResult[]; query: string; workspace: string }>(
+      `/api/search?q=${encodeURIComponent(query)}&path=${encodeURIComponent(path)}`
+    ),
+
   getConversations: (projectId?: string) =>
     get<{ conversations: Conversation[] }>(`/api/conversations${projectId ? `?project_id=${projectId}` : ""}`),
+
+  getTasks: (projectId?: string, status?: string) => {
+    const params = new URLSearchParams();
+    if (projectId) params.set("project_id", projectId);
+    if (status) params.set("status", status);
+    const query = params.toString();
+    return get<{ tasks: TaskSession[] }>(`/api/tasks${query ? `?${query}` : ""}`);
+  },
+
+  createTask: (data: {
+    title?: string;
+    project_id?: string;
+    model?: string;
+    workspace?: string;
+    task_mode?: string;
+  }) => post<{ success: boolean; task: TaskSession }>("/api/tasks", data),
+
+  updateTask: (
+    id: string,
+    data: Partial<{
+      title: string;
+      project_id: string | null;
+      workspace: string | null;
+      model: string | null;
+      status: string;
+      task_mode: string;
+      summary: string;
+    }>
+  ) => patch<{ success: boolean; task: TaskSession }>(`/api/tasks/${id}`, data),
 
   createConversation: (title?: string, projectId?: string, model?: string) =>
     post<{ success: boolean; conversation: Conversation }>("/api/conversations", { title: title || "新对话", project_id: projectId, model }),
@@ -166,9 +200,9 @@ export class AgentSocket {
     };
   }
 
-  send(message: string, conversationId?: string, workspace?: string, projectId?: string, model?: string) {
+  send(message: string, conversationId?: string, workspace?: string, projectId?: string, model?: string, taskMode?: string) {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: "chat", message, conversation_id: conversationId, workspace, project_id: projectId, model }));
+      this.ws.send(JSON.stringify({ type: "chat", message, conversation_id: conversationId, workspace, project_id: projectId, model, task_mode: taskMode }));
     }
   }
 

@@ -4,7 +4,7 @@ import remarkGfm from "remark-gfm";
 import { useNavigate, useParams } from "react-router";
 import { useStore } from "../store";
 import { useMobile } from "../hooks/useMobile";
-import type { AgentEvent, ChatMessage, Conversation, PendingApproval } from "../types";
+import type { AgentEvent, ChatMessage, Conversation, PendingApproval, TaskSession } from "../types";
 
 function getToolLabel(name: string) {
   const labels: Record<string, string> = {
@@ -927,6 +927,8 @@ export default function VibeChat() {
     createConversation,
     switchConversation,
     conversations,
+    tasks,
+    updateTask,
     loadConversations,
     loadingConversations,
     deleteConversation,
@@ -938,6 +940,7 @@ export default function VibeChat() {
   
   const [input, setInput] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [taskMode, setTaskMode] = useState<TaskSession["task_mode"]>("ask");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // 确定当前项目
@@ -966,6 +969,15 @@ export default function VibeChat() {
       void switchConversation(threadId);
     }
   }, [threadId, currentConversationId, switchConversation]);
+
+  useEffect(() => {
+    const currentTask = tasks.find((task) => task.id === currentConversationId);
+    if (currentTask?.task_mode) {
+      setTaskMode(currentTask.task_mode);
+    } else {
+      setTaskMode("ask");
+    }
+  }, [tasks, currentConversationId]);
 
   // 如果没有当前对话且 URL 中没有 threadId，自动创建或选中第一个
   useEffect(() => {
@@ -1022,15 +1034,29 @@ export default function VibeChat() {
   };
 
   // 发送消息
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = input.trim();
     if (!text || isAgentRunning) return;
+
+    if (text.startsWith("/search ")) {
+      const query = text.slice(8).trim();
+      if (query) {
+        setInput("");
+        navigate(`/search?q=${encodeURIComponent(query)}`);
+      }
+      return;
+    }
+
+    if (currentConversationId) {
+      await updateTask(currentConversationId, { task_mode: taskMode });
+    }
     setInput("");
-    sendMessage(text);
+    sendMessage(text, taskMode);
   };
 
   // 当前对话
   const currentConv = conversations.find((c) => c.id === currentConversationId);
+  const currentTask = tasks.find((task) => task.id === currentConversationId);
   const threadTitle = currentConv?.title || currentProject?.name || "Thread";
   
   // 获取当前显示的模型名称
@@ -1278,6 +1304,12 @@ export default function VibeChat() {
               </span>
               <span>·</span>
               <span>{currentModelDisplay.provider}</span>
+              {currentTask?.task_mode && (
+                <>
+                  <span>·</span>
+                  <span style={{ color: "#ffcc66" }}>{currentTask.task_mode}</span>
+                </>
+              )}
               {currentProject?.path && (
                 <>
                   <span>·</span>
@@ -1343,7 +1375,7 @@ export default function VibeChat() {
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
-                    onClick={() => sendMessage(s)}
+                    onClick={() => sendMessage(s, taskMode)}
                     style={{
                       padding: isMobile ? "12px 16px" : "10px 16px",
                       backgroundColor: "#141414",
@@ -1381,6 +1413,28 @@ export default function VibeChat() {
 
         {/* Input */}
         <div style={{ padding: isMobile ? "12px 16px" : "16px 40px", borderTop: "1px solid #2f2f2f", backgroundColor: "#080808" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: "#6a6a6a", textTransform: "uppercase", letterSpacing: 0.5 }}>Task Mode</span>
+            <select
+              value={taskMode}
+              onChange={(e) => setTaskMode(e.target.value as TaskSession["task_mode"])}
+              style={{
+                padding: "6px 10px",
+                backgroundColor: "#141414",
+                border: "1px solid #2f2f2f",
+                color: "#ffcc66",
+                fontFamily: "inherit",
+                fontSize: 12,
+              }}
+            >
+              <option value="ask">ask</option>
+              <option value="inspect">inspect</option>
+              <option value="fix">fix</option>
+              <option value="review">review</option>
+              <option value="refactor">refactor</option>
+            </select>
+            <span style={{ fontSize: 11, color: "#6a6a6a" }}>/search 关键词 可直接跳到搜索页</span>
+          </div>
           <div
             style={{
               display: "flex",
@@ -1407,10 +1461,10 @@ export default function VibeChat() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  handleSend();
+                  void handleSend();
                 }
               }}
-              placeholder={wsConnected ? "描述你想做什么..." : "等待连接..."}
+              placeholder={wsConnected ? "描述你想做什么，或输入 /search 关键词..." : "等待连接..."}
               disabled={isAgentRunning || !wsConnected}
               rows={1}
               style={{
@@ -1429,7 +1483,7 @@ export default function VibeChat() {
               }}
             />
             <button
-              onClick={handleSend}
+              onClick={() => void handleSend()}
               disabled={!input.trim() || isAgentRunning || !wsConnected}
               style={{
                 display: "flex",

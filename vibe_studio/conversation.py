@@ -26,8 +26,17 @@ class Conversation:
     created_at: str
     updated_at: str
     project_id: str | None = None  # 关联的项目ID
+    workspace: str | None = None
     messages: list[dict] = field(default_factory=list)
     model: str | None = None  # 该对话使用的模型 (provider/model_id)，为 None 时使用主模型
+    status: str = "idle"
+    task_mode: str = "ask"
+    summary: str = ""
+    last_error: str | None = None
+    changed_files: list[str] = field(default_factory=list)
+    executed_commands: list[str] = field(default_factory=list)
+    last_run_at: str | None = None
+    last_run_summary: dict | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -36,8 +45,17 @@ class Conversation:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "project_id": self.project_id,
+            "workspace": self.workspace,
             "messages": self.messages,
             "model": self.model,
+            "status": self.status,
+            "task_mode": self.task_mode,
+            "summary": self.summary,
+            "last_error": self.last_error,
+            "changed_files": self.changed_files,
+            "executed_commands": self.executed_commands,
+            "last_run_at": self.last_run_at,
+            "last_run_summary": self.last_run_summary,
         }
 
     @classmethod
@@ -48,8 +66,17 @@ class Conversation:
             created_at=data.get("created_at", datetime.now().isoformat()),
             updated_at=data.get("updated_at", datetime.now().isoformat()),
             project_id=data.get("project_id"),
+            workspace=data.get("workspace"),
             messages=data.get("messages", []),
             model=data.get("model"),
+            status=data.get("status", "idle"),
+            task_mode=data.get("task_mode", "ask"),
+            summary=data.get("summary", ""),
+            last_error=data.get("last_error"),
+            changed_files=data.get("changed_files", []),
+            executed_commands=data.get("executed_commands", []),
+            last_run_at=data.get("last_run_at"),
+            last_run_summary=data.get("last_run_summary"),
         )
 
 
@@ -88,7 +115,13 @@ def get_conversation(conv_id: str) -> Optional[Conversation]:
         return None
 
 
-def create_conversation(title: str = "新对话", project_id: str | None = None, model: str | None = None) -> Conversation:
+def create_conversation(
+    title: str = "新对话",
+    project_id: str | None = None,
+    model: str | None = None,
+    workspace: str | None = None,
+    task_mode: str = "ask",
+) -> Conversation:
     now = datetime.now().isoformat()
     conv = Conversation(
         id=str(uuid.uuid4()),
@@ -96,8 +129,10 @@ def create_conversation(title: str = "新对话", project_id: str | None = None,
         created_at=now,
         updated_at=now,
         project_id=project_id,
+        workspace=workspace,
         messages=[],
         model=model,
+        task_mode=task_mode,
     )
     save_conversation(conv)
     return conv
@@ -123,6 +158,33 @@ def update_conversation_title(conv_id: str, title: str) -> Optional[Conversation
     if not conv:
         return None
     conv.title = title
+    conv.updated_at = datetime.now().isoformat()
+    save_conversation(conv)
+    return conv
+
+
+def update_conversation_meta(conv_id: str, **patch: object) -> Optional[Conversation]:
+    conv = get_conversation(conv_id)
+    if not conv:
+        return None
+
+    allowed_fields = {
+        "title",
+        "project_id",
+        "workspace",
+        "model",
+        "status",
+        "task_mode",
+        "summary",
+        "last_error",
+        "changed_files",
+        "executed_commands",
+        "last_run_at",
+        "last_run_summary",
+    }
+    for key, value in patch.items():
+        if key in allowed_fields:
+            setattr(conv, key, value)
     conv.updated_at = datetime.now().isoformat()
     save_conversation(conv)
     return conv

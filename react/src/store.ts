@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AppConfig, ChatMessage, FileNode, Conversation, Project, AgentEvent, PendingApproval } from "./types";
+import type { AppConfig, ChatMessage, FileNode, Conversation, Project, AgentEvent, PendingApproval, TaskSession } from "./types";
 import { AgentSocket, api } from "./api";
 
 function formatStatusMessage(event: AgentEvent): string {
@@ -124,6 +124,38 @@ function createSocket(
           }
           return { messages: msgs };
         }
+        case "run_summary_final": {
+          if (!last || last.role !== "assistant") return {};
+          msgs[msgs.length - 1] = { ...last, events: [...(last.events ?? []), event] };
+          const currentConversationId = state.currentConversationId;
+          return {
+            messages: msgs,
+            tasks: currentConversationId
+              ? state.tasks.map((task) =>
+                  task.id === currentConversationId
+                    ? {
+                        ...task,
+                        summary: event.summary.summary_text,
+                        changed_files: event.summary.files_changed,
+                        executed_commands: event.summary.commands_executed.map((item) => item.command),
+                        last_run_summary: event.summary,
+                        last_run_at: new Date().toISOString(),
+                      }
+                    : task
+                )
+              : state.tasks,
+          };
+        }
+        case "task_status": {
+          const currentConversationId = state.currentConversationId;
+          return {
+            tasks: currentConversationId
+              ? state.tasks.map((task) =>
+                  task.id === currentConversationId ? { ...task, status: event.status } : task
+                )
+              : state.tasks,
+          };
+        }
         case "done": {
           if (!last || last.role !== "assistant") return { isAgentRunning: false };
           let content = last.content;
@@ -173,8 +205,10 @@ interface AppState {
   showOnboarding: boolean;
 
   conversations: Conversation[];
+  tasks: TaskSession[];
   currentConversationId: string | null;
   loadingConversations: boolean;
+  loadingTasks: boolean;
 
   projects: Project[];
   currentProjectId: string | null;
@@ -190,13 +224,30 @@ interface AppState {
   refreshConfig: () => Promise<void>;
   loadFiles: () => Promise<void>;
   openFile: (path: string) => Promise<void>;
-  sendMessage: (text: string) => void;
+  sendMessage: (text: string, taskMode?: string) => void;
   respondToApproval: (approved: boolean, reason?: string) => void;
   clearChat: () => void;
   setShowSettings: (v: boolean) => void;
 
   loadConversations: (projectId?: string) => Promise<void>;
+  loadTasks: (projectId?: string, status?: string) => Promise<void>;
   createConversation: (projectId?: string, model?: string) => Promise<string | undefined>;
+  createTask: (data: {
+    title?: string;
+    project_id?: string;
+    model?: string;
+    workspace?: string;
+    task_mode?: string;
+  }) => Promise<string | undefined>;
+  updateTask: (id: string, data: Partial<{
+    title: string;
+    project_id: string | null;
+    workspace: string | null;
+    model: string | null;
+    status: string;
+    task_mode: string;
+    summary: string;
+  }>) => Promise<void>;
   loadConversation: (id: string) => Promise<void>;
   switchConversation: (id: string) => Promise<void>;
   deleteConversation: (id: string) => Promise<void>;
@@ -223,8 +274,10 @@ export const useStore = create<AppState>((set, get) => ({
   showOnboarding: false,
 
   conversations: [],
+  tasks: [],
   currentConversationId: null,
   loadingConversations: false,
+  loadingTasks: false,
 
   projects: [],
   currentProjectId: null,
@@ -260,6 +313,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (cfg.setup_complete) {
         void get().loadFiles();
         void get().loadConversations();
+        void get().loadTasks();
         void get().loadProjects();
         createSocket(set, get);
       }
@@ -313,7 +367,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  sendMessage: (text: string) => {
+  sendMessage: (text: string, taskMode?: string) => {
     if (!socket || get().isAgentRunning) return;
 
     const userMsg: ChatMessage = {
@@ -340,7 +394,7 @@ export const useStore = create<AppState>((set, get) => ({
     const cfg = get().config;
     const convId = get().currentConversationId ?? undefined;
     const projectId = get().currentProjectId ?? undefined;
-    socket.send(text, convId, cfg?.workspace, projectId);
+    socket.send(text, convId, cfg?.workspace, projectId, undefined, taskMode);
   },
 
   respondToApproval: (approved: boolean, reason?: string) => {
@@ -381,11 +435,43 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  loadTasks: async (projectId?: string, status?: string) => {
+    set(() => ({ loadingTasks: true }));
+    try {
+      const { tasks } = await api.getTasks(projectId, status);
+      set(() => ({ tasks, loadingTasks: false }));
+    } catch (e) {
+      console.error("loadTasks failed:", e);
+      set(() => ({ loadingTasks: false }));
+    }
+  },
+
   createConversation: async (projectId?: string, model?: string) => {
     try {
       const { conversation } = await api.createConversation("新对话", projectId, model);
       set((s) => ({
         conversations: [conversation, ...s.conversations],
+        tasks: [
+          {
+            id: conversation.id,
+            title: conversation.title,
+            created_at: conversation.created_at,
+            updated_at: conversation.updated_at,
+            project_id: conversation.project_id,
+            workspace: get().config?.workspace ?? null,
+            message_count: conversation.message_count,
+            model: conversation.model ?? null,
+            status: "idle",
+            task_mode: "ask",
+            summary: "",
+            last_error: null,
+            changed_files: [],
+            executed_commands: [],
+            last_run_at: null,
+            last_run_summary: null,
+          },
+          ...s.tasks,
+        ],
         currentConversationId: conversation.id,
         messages: [],
         pendingApproval: null,
@@ -394,6 +480,33 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (e) {
       console.error("createConversation failed:", e);
       return undefined;
+    }
+  },
+
+  createTask: async (data) => {
+    try {
+      const { task } = await api.createTask(data);
+      set((s) => ({
+        tasks: [task, ...s.tasks],
+        currentConversationId: task.id,
+        messages: [],
+        pendingApproval: null,
+      }));
+      return task.id;
+    } catch (e) {
+      console.error("createTask failed:", e);
+      return undefined;
+    }
+  },
+
+  updateTask: async (id, data) => {
+    try {
+      const { task } = await api.updateTask(id, data);
+      set((s) => ({
+        tasks: s.tasks.map((item) => (item.id === id ? task : item)),
+      }));
+    } catch (e) {
+      console.error("updateTask failed:", e);
     }
   },
 
@@ -432,10 +545,12 @@ export const useStore = create<AppState>((set, get) => ({
       await api.deleteConversation(id);
       set((s) => {
         const nextConversations = s.conversations.filter((c) => c.id !== id);
+        const nextTasks = s.tasks.filter((task) => task.id !== id);
         const nextConvId = s.currentConversationId === id ? null : s.currentConversationId;
         const nextMessages = s.currentConversationId === id ? [] : s.messages;
         return {
           conversations: nextConversations,
+          tasks: nextTasks,
           currentConversationId: nextConvId,
           messages: nextMessages,
         };
@@ -501,6 +616,7 @@ export const useStore = create<AppState>((set, get) => ({
       await get().refreshConfig();
       void get().loadFiles();
       await get().loadConversations(id);
+      await get().loadTasks(id);
     } catch (e) {
       console.error("switchProject failed:", e);
     }

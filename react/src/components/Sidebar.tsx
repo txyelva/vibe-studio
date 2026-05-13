@@ -5,6 +5,8 @@ import { useMobile } from "../hooks/useMobile";
 
 const MAIN_NAV_ITEMS = [
   { path: "/projects", label: "Projects", icon: "/images/folder2.png" },
+  { path: "/tasks", label: "Tasks", icon: "/images/messagesquare.png" },
+  { path: "/search", label: "Search", icon: "/images/search.png" },
   { path: "/models", label: "Models", icon: "/images/terminal3.png" },
 ];
 

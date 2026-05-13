@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import App from "../App";
 import Dashboard from "../views/Dashboard";
 import Projects from "../views/Projects";
+import Tasks from "../views/Tasks";
+import Search from "../views/Search";
 import VibeChat from "../views/VibeChat";
 import Settings from "../views/Settings";
 import Onboarding from "../views/Onboarding";
@@ -115,8 +117,11 @@ export const RouterView = () => {
         >
           <Route index element={<Dashboard />} />
           <Route path="projects" element={<Projects />} />
+          <Route path="tasks" element={<Tasks />} />
+          <Route path="search" element={<Search />} />
           <Route path="projects/:projectId" element={<ProjectDetail />} />
           <Route path="thread" element={<VibeChat />} />
+          <Route path="thread/:threadId" element={<VibeChat />} />
           <Route path="projects/:projectId/thread" element={<VibeChat />} />
           <Route path="projects/:projectId/thread/:threadId" element={<VibeChat />} />
           <Route path="models" element={<Models />} />
